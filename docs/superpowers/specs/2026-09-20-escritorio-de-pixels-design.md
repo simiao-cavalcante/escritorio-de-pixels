@@ -53,10 +53,12 @@ escritorio-de-pixels/
     salas.js                # resolve ferramenta → sala a partir de salas.json
     cargos.js               # modelo → cargo; cli → cor e sigla do crachá
     tradutores/
-      claude.js             # payload de hook do Claude Code → evento v1
-      codex.js              # notify e rollout JSONL do Codex → evento v1
-      cursor.js             # stream-json do cursor-agent → evento v1
-      grok.js               # active_sessions.json do Grok → presença
+      comum.js              # normalização compartilhada (snake_case, camelCase, detalhe, agente)
+      claude.js             # hooks http do Claude Code → evento v1 (+ tokens do transcrito)
+      codex.js              # hooks command do Codex → evento v1 (+ tokens do rollout)
+      grok.js               # hooks http do Grok → evento v1
+      cursor.js             # hooks command do Cursor e stream-json → evento v1
+      gemini.js             # hooks command do Gemini CLI → evento v1
     demo.js                 # gerador de eventos sintéticos
     instalar.js             # merge idempotente e backup de configs de hooks
   public/
@@ -74,8 +76,11 @@ escritorio-de-pixels/
     gerar.py                # chama gpt-image-2.5 e pós-processa com Pillow
     CREDITOS.md
   adaptadores/
-    claude.hooks.json       # trecho de hooks inserido em ~/.claude/settings.json
-    codex.md                # notify + rollout
+    claude.hooks.json       # trecho inserido em ~/.claude/settings.json
+    codex.hooks.json        # trecho inserido em ~/.codex/hooks.json
+    grok.hooks.json         # gravado como ~/.grok/hooks/escritorio.json
+    cursor.hooks.json       # trecho inserido em ~/.cursor/hooks.json
+    gemini.hooks.json       # trecho inserido em ~/.gemini/settings.json
     cursor/escritorio-cursor.sh
     generico.md             # como emitir eventos com curl
   docs/
@@ -170,54 +175,71 @@ Cargos por família de modelo (`cargos.json`, regex sobre o id do modelo, primei
 | Sócio(a) | `fable`, `mythos`, `gpt-6`, `astra`, `ultra`, `grok-5` |
 | Advogado(a) sênior | `opus`, `gpt-5\.[4-9]`, `gemini-3.*pro`, `grok-4` |
 | Associado(a) | `sonnet`, `gpt-5`, `gemini.*flash`, `codex` |
-| Júnior | `haiku`, `mini`, `nano`, `local`, sem modelo |
+| Júnior | `haiku`, `mini`, `nano`, `local` |
+| Advogado(a) (neutro) | modelo ausente ou sem regra |
 
 Subagentes são sempre estagiários, independentemente do modelo. Crachá por CLI: claude terracota, codex verde, gemini azul, grok grafite, cursor roxo, opencode turquesa, outros cinza. Sem logos de terceiros: o crachá usa sigla e cor.
 
 ## 7. Adaptadores
 
-A tradução de payload nativo para evento v1 fica no servidor (`POST /hook/<cli>` e subcomando `traduzir <cli>` para stdin), então o adaptador do lado da CLI é só configuração ou um wrapper de poucas linhas.
+Princípio: a tradução do payload nativo para evento v1 fica no servidor, em `POST /hook/<cli>`. Do lado da CLI o adaptador é só um trecho de configuração de hook: tipo `http` quando a CLI oferece (Claude Code, Grok), senão tipo `command` com `curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/<cli>`. Nenhum hook instalado bloqueia o agente: o servidor responde `204` sem corpo, o timeout é de 2 s e uma queda do Escritório é ignorada pela CLI.
+
+Instalação por `node server.mjs instalar <cli>` para `claude`, `codex`, `grok`, `cursor` e `gemini`: merge idempotente no arquivo de configuração da CLI, backup `<arquivo>.bak-<timestamp>`, e `desinstalar <cli>` remove apenas as entradas cuja URL ou comando contenha `127.0.0.1:<porta>/hook/`. A porta gravada nos hooks é a porta em uso na instalação.
+
+Deduplicação: o servidor descarta um evento igual a outro (mesmo `cli`, `sessao`, `tipo`, ferramenta ou agente e `ts` arredondado ao segundo) recebido nos últimos 2 s. Isso tolera hooks instalados em dobro e a importação automática que o Grok faz dos hooks do Claude e do Cursor.
+
+Mapeamento comum de eventos de hook para eventos v1, válido para Claude Code, Codex, Grok e Cursor, que usam os mesmos nomes com grafia diferente:
+
+| Evento de hook | Evento v1 |
+| --- | --- |
+| SessionStart | `sessao.inicio` (com `modelo` quando o payload traz) |
+| UserPromptSubmit, beforeSubmitPrompt | `prompt` |
+| PreToolUse | `ferramenta.inicio`; `detalhe` extraído de `tool_input` (`file_path`, `command`, `query`, `pattern`, `subagent_type` e `description`, `skill`, `url`, `prompt`); `agente` de `agent_id` e `agent_type` |
+| PostToolUse, PostToolUseFailure | `ferramenta.fim` com `ok` |
+| SubagentStart, SubagentStop | `subagente.inicio`, `subagente.fim` |
+| PermissionRequest, Notification (permission_prompt, idle_prompt) | `aguardando` |
+| Stop, Interrupt, StopCancelled | `parado` |
+| SessionEnd | `sessao.fim` |
 
 ### Claude Code (confirmado na documentação de hooks)
 
-Hooks do tipo `http` apontando para `http://127.0.0.1:7777/hook/claude`, timeout de 2 s, sem bloqueio funcional: qualquer falha do servidor é ignorada pelo Claude Code.
+Hooks do tipo `http` para `/hook/claude`, instalados em `~/.claude/settings.json`. Payload em snake_case: `hook_event_name`, `session_id`, `transcript_path`, `cwd`, `permission_mode`, `tool_name`, `tool_input`, `tool_use_id`, `agent_id`, `agent_type`, `prompt`; `model` só em `SessionStart`.
 
-| Evento do hook | Evento v1 |
-| --- | --- |
-| `SessionStart` | `sessao.inicio` com `modelo` |
-| `UserPromptSubmit` | `prompt` |
-| `PreToolUse` | `ferramenta.inicio`; `detalhe` extraído de `tool_input` (`file_path`, `command`, `query`, `pattern`, `subagent_type` e `description`, `skill`, `url`, `prompt`); `agente` de `agent_id`/`agent_type` |
-| `PostToolUse` / `PostToolUseFailure` | `ferramenta.fim` com `ok` |
-| `SubagentStart` / `SubagentStop` | `subagente.inicio` / `subagente.fim` |
-| `PermissionRequest`, `Notification` (permission_prompt, idle_prompt) | `aguardando` |
-| `Stop` | `parado` |
-| `SessionEnd` | `sessao.fim` |
+Tokens: os hooks não trazem uso de tokens. No `Stop`, o tradutor lê as últimas 50 linhas do `transcript_path`, localiza a entrada de assistente mais recente com `message.usage` e emite `tokens` com `contexto` = `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` e `saida` = `output_tokens` dessa mensagem. Como cada `Stop` reporta só a última mensagem, não há dupla contagem. É melhor esforço: o formato do transcrito é interno ao Claude Code, então qualquer erro de leitura é silencioso e desligável com `--sem-transcritos`.
 
-Tokens: os hooks não trazem uso de tokens. No `Stop`, o tradutor lê as últimas 50 linhas do `transcript_path`, localiza a entrada de assistente mais recente com `message.usage` e emite `tokens` com `contexto` = `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` (tamanho atual do contexto) e `saida` = `output_tokens` dessa mensagem. Como cada `Stop` reporta só a última mensagem, não há dupla contagem. É melhor esforço: o formato do transcrito é interno ao Claude Code, então qualquer erro de leitura é silencioso e desligável com `--sem-transcritos`.
+### Codex CLI (hooks nativos; `codex features list` mostra `hooks stable true` na 0.155.1)
 
-Instalação: `node server.mjs instalar claude` faz merge em `~/.claude/settings.json` preservando hooks existentes, grava backup `settings.json.bak-<timestamp>`, é idempotente (não duplica) e `desinstalar claude` remove só as entradas do Escritório.
+Arquivo `~/.codex/hooks.json` com hooks `type: "command"` (JSON no stdin) e `curl` para `/hook/codex`. Eventos: `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PermissionRequest`, `SubagentStart`, `SubagentStop`, `Stop`, `Interrupt`. Payload: `session_id`, `transcript_path`, `cwd`, `hook_event_name`, `model` (em todo evento), `permission_mode`, `turn_id`, `tool_name`, `tool_input`, `tool_response`, `agent_id`, `agent_type`.
 
-### Codex (verificado localmente: codex-cli 0.155.1)
+Confiança: o Codex exige confirmar a confiança em hooks novos na primeira execução (existe a flag `--dangerously-bypass-hook-trust`, que o instalador não usa nem recomenda). O instalador imprime o passo de confirmação.
 
-- `notify` em `~/.codex/config.toml` recebe `turn-ended`; o adaptador o encaminha como `parado`. Como `notify` aceita um único comando, o instalador encadeia o comando já existente em vez de substituí-lo.
-- Reserva e fonte de detalhe: o servidor observa `~/.codex/sessions/<ano>/<mês>/<dia>/rollout-*.jsonl` do dia corrente. `session_meta` abre a sessão (`cwd`, `session_id`); `turn_context` traz `model`; `task_started` vira `prompt`/`pensando`; `item_completed` com item de chamada de ferramenta vira `ferramenta.inicio` + `ferramenta.fim`; `token_count` vira `tokens`; `task_complete` vira `parado`.
-- Hooks nativos do Codex (flag `[features] hooks = true`) entram como melhoria posterior quando o formato do payload for fixado; o tradutor já aceita `POST /hook/codex`.
+Tokens: no `Stop`, o tradutor lê o fim do `transcript_path` (rollout JSONL) e usa o último `token_usage_record` (`input_tokens`, `cached_input_tokens`, `output_tokens`, `total_tokens`) para emitir `tokens` com `contexto` e `saida`. Mesma política de melhor esforço do Claude.
 
-### Cursor Agent
+O mecanismo `notify` não é usado: ele só emite `agent-turn-complete`, sem modelo nem tokens, e aceita um único comando, que nesta máquina já está ocupado por outra ferramenta.
 
-Wrapper `adaptadores/cursor/escritorio-cursor.sh` executa `cursor-agent --print --output-format stream-json "$@"` e encaminha cada linha para `node server.mjs traduzir cursor`, que emite eventos v1. Cobre execuções por script; o modo interativo fica fora da v1.
+### Grok CLI (hooks nativos com `type: "http"`; documentação local em `~/.grok/docs/user-guide/10-hooks.md`)
 
-### Grok CLI
+Arquivo próprio `~/.grok/hooks/escritorio.json` com hooks `http` para `/hook/grok`. Eventos: `session_start`, `session_end`, `user_prompt_submit`, `pre_tool_use`, `post_tool_use`, `post_tool_use_failure`, `permission_denied`, `notification`, `subagent_start`, `subagent_stop`, `stop`, `stop_failure`, `stop_cancelled`. Envelope em camelCase: `hookEventName`, `sessionId`, `cwd`, `workspaceRoot`, `timestamp`, `permissionMode`, `promptId`, `toolName`, `toolInput`.
 
-Presença: o servidor observa `~/.grok/active_sessions.json` (`session_id`, `cwd`, `pid`, `opened_at`) e mostra o advogado na recepção enquanto a sessão existir e o processo estiver vivo. Eventos de ferramenta ficam para depois, se os logs em `~/.grok/sessions` se mostrarem estáveis.
+O Grok importa automaticamente os hooks de `~/.claude/settings.json` e `~/.cursor/hooks.json`, com alias de nomes de ferramenta (confirmado em `~/.grok/logs/hooks.log`). Por isso `/hook/claude` e `/hook/cursor` reconhecem o envelope do Grok pela chave `hookEventName` e rotulam `cli: grok`; a deduplicação elimina o evento em dobro quando o arquivo dedicado também está instalado.
 
-### Gemini CLI e OpenCode
+Modelo e tokens: o payload não traz. Melhor esforço a partir de `~/.grok/sessions/<cwd codificado>/<sessão>/summary.json` (`current_model_id`) e `usage.json`, quando existirem; sem eles, o advogado aparece com cargo neutro.
 
-Fora da v1 (não estão instalados aqui para teste). Entram pelo protocolo genérico; `docs/adaptadores.md` traz o esqueleto e uma issue aberta no repositório convida contribuições.
+### Cursor Agent (hooks nativos; `~/.cursor/hooks.json`, confirmado na skill local `create-hook`)
 
-### Genérico
+Merge em `~/.cursor/hooks.json`, hooks `type: "command"` com `curl` para `/hook/cursor`. Eventos: `sessionStart`, `sessionEnd`, `beforeSubmitPrompt`, `preToolUse`, `postToolUse`, `postToolUseFailure`, `subagentStart`, `subagentStop`, `stop`. Payload JSON no stdin em camelCase. O tradutor é construído sobre fixtures capturadas de uma execução real do `cursor-agent` nesta máquina. Alternativa documentada para execuções por script: wrapper com `--output-format stream-json` encaminhado a `node server.mjs traduzir cursor`.
 
-`docs/protocolo.md` documenta os eventos com exemplos de `curl`, para qualquer script, CLI ou pipeline emitir eventos.
+### Gemini CLI (hooks nativos em `settings.json`; não instalado nesta máquina)
+
+Trecho para `~/.gemini/settings.json` com hooks `type: "command"` e `curl` para `/hook/gemini`. Mapeamento: `SessionStart` e `SessionEnd` como acima; `BeforeAgent` vira `prompt`; `AfterAgent` vira `parado`; `BeforeTool` e `AfterTool` viram `ferramenta.inicio` e `ferramenta.fim`; `AfterModel` vira `tokens` e atualiza `modelo` a partir de `llm_response`; `Notification` vira `aguardando`. Payload base: `session_id`, `transcript_path`, `cwd`, `hook_event_name`, `timestamp`, mais `tool_name`, `tool_input`, `tool_response` nos eventos de ferramenta. O tradutor nasce da documentação com fixtures sintéticas e o README o marca como não testado localmente, convidando validação.
+
+### OpenCode (v1.1)
+
+`opencode serve` expõe um fluxo SSE em `127.0.0.1:4096/event` com sessões, mensagens, ferramentas, modelo e tokens. O adaptador será uma ponte `node server.mjs ponte opencode` que assina esse fluxo e traduz. Fica fora da v1 por não estar instalado aqui e exigir um processo a mais; entra como issue aberta.
+
+### Genérico e outras CLIs
+
+`POST /hook/generico?cli=<nome>` aceita payloads no formato snake_case do Claude Code, que GitHub Copilot CLI, Kimi CLI e Qwen Code seguem de perto em seus hooks. `docs/protocolo.md` documenta os eventos v1 com exemplos de `curl`, para qualquer script ou pipeline emitir eventos diretamente em `/eventos`. `docs/adaptadores.md` reúne os trechos de configuração por CLI e o esqueleto para novas contribuições.
 
 ## 8. Cliente: o escritório
 
@@ -262,7 +284,7 @@ Licença dos PNGs: MIT, com `arte/CREDITOS.md` e nota no README informando gera�
 
 ## 12. Testes
 
-- Unitários com `node --test`: protocolo (válido, inválido, limites, truncamento), estado (todas as transições, expirações com relógio injetado, subagentes, sessão implícita), salas (precedência, regex inválida, skills, prefixo mais longo), cargos, tradutores com fixtures reais de payload do Claude Code e de linhas de rollout do Codex, instalador (merge idempotente sobre fixture de `settings.json`, backup, desinstalação limpa).
+- Unitários com `node --test`: protocolo (válido, inválido, limites, truncamento), estado (todas as transições, expirações com relógio injetado, subagentes, sessão implícita), salas (precedência, regex inválida, skills, prefixo mais longo), cargos, tradutores com fixtures reais capturadas nesta máquina para Claude Code, Codex (hooks e rollout), Grok e Cursor, e fixtures sintéticas da documentação para Gemini, mais deduplicação, instalador (merge idempotente sobre fixture de `settings.json`, backup, desinstalação limpa).
 - Integração: sobe o servidor em porta efêmera, envia eventos, lê `/fluxo`, confere snapshot e deltas; `Origin` externo recebe 403.
 - Visual: `node server.mjs --demo` popula o escritório com sessões sintéticas de várias CLIs; captura de tela pelo Chrome a cada revisão, com checklist no plano.
 - CI: GitHub Actions rodando `node --test` em Node 20 e 22.
@@ -291,4 +313,4 @@ Licença dos PNGs: MIT, com `arte/CREDITOS.md` e nota no README informando gera�
 - Formato de hooks ou rollouts muda: tradutores isolados, com fixtures, falha silenciosa e teste que quebra cedo.
 - Arte inconsistente entre imagens: preâmbulo fixo, quantização comum, iteração de prompts por asset, placeholders como rede de segurança.
 - Latência dos hooks http no Claude Code: timeout de 2 s; alternativa documentada com hook `command` assíncrono.
-- Escopo crescer: v1 termina quando a demo, o adaptador do Claude e o do Codex funcionam de ponta a ponta com arte gerada; o resto vira issue.
+- Escopo crescer: v1 termina quando a demo e os adaptadores de Claude Code, Codex, Grok e Cursor funcionam de ponta a ponta nesta máquina com arte gerada; Gemini sai documentado e não testado; OpenCode e demais viram issues.
