@@ -158,7 +158,7 @@ Deduplicação: o servidor calcula uma chave (`cli`, `sessao`, `tipo`, `ferramen
 | `aguardando` | → `aguardando` | → `aguardando` | → `aguardando` | fica | → `aguardando` |
 | `parado` | fica | → `recepcao` | → `recepcao` | → `recepcao` | fica |
 | `sessao.fim` | → `saiu` | → `saiu` | → `saiu` | → `saiu` | → `saiu` |
-| `tokens`, `subagente.*` | só metadados | idem | idem | idem | → estado anterior não muda; atualiza atividade |
+| `tokens`, `subagente.*` | só metadados | idem | idem | idem | idem |
 
 Todo evento da sessão atualiza `ultimaAtividade`. Eventos de estagiário atualizam `ultimaAtividadeAgregada` do advogado e nunca o estado próprio dele.
 
@@ -196,7 +196,7 @@ Salas da v1 (ids fixos, também conhecidos pelo cliente):
 | Sala | Fase | Cai aqui |
 | --- | --- | --- |
 | `recepcao` | espera e pensamento | ocioso, entre turnos, ferramenta sem regra (balcão) |
-| `biblioteca` | pesquisa | Read, Grep, Glob, LS, WebSearch, WebFetch, ToolSearch; `read_file`, `grep_search`, `list_dir`, `codebase_search`, `web_search`, `google_web_search`; prefixos `mcp__brave-search__`, `mcp__context7__`; skills `julgado`, `informativo-*`, `find-skills` |
+| `biblioteca` | pesquisa | Read, Grep, Glob, LS, WebSearch, WebFetch, ToolSearch; Bash cujo comando contenha `rg`, `grep` ou `find` (regra de detalhe); `read_file`, `grep_search`, `list_dir`, `codebase_search`, `web_search`, `google_web_search`; prefixos `mcp__brave-search__`, `mcp__context7__`; skills `julgado`, `informativo-*`, `find-skills` |
 | `gabinete` | minuta | Edit, Write, MultiEdit, NotebookEdit; `apply_patch`, `write_file`, `edit_file`, `replace`; skills `proprio-punho`, `material`, `ebook*`, `probook-progrupo` |
 | `revisao` | revisão | Agent/Task cujo `subagent_type` case com `review|reviewer|verifier|checker|auditor|rescue`; skills `code-review`, `security-review`, `simplify`, `codex:rescue` |
 | `cartorio` | protocolo e expediente | Bash, `shell`, `exec_command`, `run_terminal_cmd`, `run_shell_command` |
