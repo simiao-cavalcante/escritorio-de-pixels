@@ -275,7 +275,7 @@ Licença dos PNGs: MIT, com `arte/CREDITOS.md` e nota no README informando gera�
 | Design do mundo e da arte | Opus 5 | layout do escritório, grafo de waypoints, prompts do manifesto, tabela de regras de salas e cargos |
 | Implementação por módulo | Sonnet 5 | servidor, estado, tradutores, cliente, testes, README, em paralelo por módulo com TDD |
 | Verificações baratas | Haiku 4.5 | validação de manifesto e atlas, links do README, consistência i18n |
-| Revisão independente | Codex (plugin instalado) | leitura crítica do diff antes da publicação |
+| Revisão independente | GPT-6 Astra, via Codex CLI (plugin instalado, `model = "gpt-6-astra"`) | revisão crítica da spec, do plano e do diff antes da publicação, como agente revisor separado |
 | Revisão final de código | `/code-review` nível alto | correções antes do push |
 
 ## 14. Publicação
