@@ -13,7 +13,7 @@ Inspirado no Age of Agents (agentsmill, MIT), mas escrito do zero, leve e neutro
 
 - Responder permissões ou interagir com o agente a partir da tela.
 - Múltiplos andares ou cidades; a v1 tem um andar.
-- Ler transcritos como fonte primária (só como reserva em adaptadores específicos).
+- Parsing de transcritos no núcleo do servidor. Adaptadores específicos podem ler logs da própria CLI (Codex, Grok) quando ela não oferece hooks.
 - Persistência histórica, estatísticas acumuladas, mobile.
 - Publicação no npm (fica como passo opcional após o GitHub).
 
@@ -115,7 +115,7 @@ Tipos e campos específicos:
 | `ferramenta.fim` | `ferramenta: { nome, id?, ok? }`, `agente?` |
 | `subagente.inicio` | `agente: { id, tipo, descricao? }` |
 | `subagente.fim` | `agente: { id }` |
-| `tokens` | `tokens: { entrada, saida, contexto?, janela? }` |
+| `tokens` | `tokens: { entrada?, saida?, contexto?, janela? }`. `entrada` e `saida` são incrementos que o servidor acumula; `contexto` e `janela` são valores absolutos que substituem o anterior |
 | `aguardando` | `motivo?` (permissão, pergunta) |
 | `parado` | — (turno terminou) |
 
@@ -136,12 +136,12 @@ Estados do advogado e transições:
 | --- | --- | --- |
 | `recepcao` | `sessao.inicio`, ou primeiro evento de sessão desconhecida | `prompt` ou `ferramenta.inicio` |
 | `pensando` | `prompt`, ou `ferramenta.fim` sem outra ferramenta ativa | `ferramenta.inicio`, `parado`, `aguardando` |
-| `trabalhando` | `ferramenta.inicio` (sala resolvida por `salas.json`) | `ferramenta.fim`, `parado`, `aguardando` |
+| `trabalhando` | `ferramenta.inicio` (sala resolvida por `salas.json`) | `ferramenta.fim`, `parado`, `aguardando`; sem `ferramenta.fim` há 10 min volta a `pensando` |
 | `aguardando` | `aguardando` | qualquer evento da sessão |
 | `ocioso` | sem eventos há 2 min a partir de `pensando` ou `recepcao` | qualquer evento da sessão |
 | `saiu` | `sessao.fim`, ou sem eventos há 30 min | removido após 3 s (animação de saída) |
 
-Estagiário: `trabalhando` enquanto tiver `ferramenta.inicio` pendente, `pensando` entre ferramentas, removido em `subagente.fim` ou quando o advogado sai. Eventos de ferramenta com `agente` presente atualizam o estagiário e não o advogado.
+Estagiário: nasce em `subagente.inicio` na sala `reunioes`, ou em `revisao` se o `tipo` casar com a regra de revisão de `salas.json`; fica `trabalhando` enquanto tiver `ferramenta.inicio` pendente e caminha para a sala dessa ferramenta; `pensando` entre ferramentas, quando orbita o advogado; removido em `subagente.fim` ou quando o advogado sai. Eventos de ferramenta com `agente` presente atualizam o estagiário e não o advogado. Um `subagente.inicio` para agente desconhecido cria o estagiário implicitamente.
 
 Eventos fora de ordem ou para sessão desconhecida criam a sessão implicitamente. Expirações usam um relógio injetável para permitir teste determinístico.
 
@@ -157,7 +157,7 @@ Salas da v1 e função:
 | `biblioteca` | pesquisa | Read, Grep, Glob, LS, WebSearch, WebFetch, ToolSearch; `read_file`, `grep_search`, `list_dir`, `codebase_search`, `web_search`, `google_web_search`; `mcp__brave-search__*`, `mcp__context7__*`; skills `julgado`, `informativo-*`, `find-skills` |
 | `gabinete` | minuta | Edit, Write, MultiEdit, NotebookEdit; `apply_patch`, `write_file`, `edit_file`, `replace`; skills `proprio-punho`, `material`, `ebook*`, `probook-progrupo` |
 | `revisao` | revisão | Agent/Task cujo tipo case com `review|reviewer|verifier|checker|auditor|rescue`; skills `code-review`, `security-review`, `simplify`, `codex:rescue` |
-| `cartorio` | protocolo e expediente | Bash, `shell`, `exec_command`, `run_terminal_cmd`, `run_shell_command`; regex de detalhe `git (commit|push|tag)` |
+| `cartorio` | protocolo e expediente | Bash, `shell`, `exec_command`, `run_terminal_cmd`, `run_shell_command` |
 | `reunioes` | recrutamento e consultas | Agent, Task, Workflow, SendMessage; prefixo `mcp__` sem regra mais específica |
 | `copa` | pausa | `aguardando` |
 
@@ -186,14 +186,14 @@ Hooks do tipo `http` apontando para `http://127.0.0.1:7777/hook/claude`, timeout
 | --- | --- |
 | `SessionStart` | `sessao.inicio` com `modelo` |
 | `UserPromptSubmit` | `prompt` |
-| `PreToolUse` | `ferramenta.inicio`; `detalhe` extraído de `tool_input` (`file_path`, `command`, `query`, `pattern`, `description`, `skill`, `url`, `prompt`); `agente` de `agent_id`/`agent_type` |
+| `PreToolUse` | `ferramenta.inicio`; `detalhe` extraído de `tool_input` (`file_path`, `command`, `query`, `pattern`, `subagent_type` e `description`, `skill`, `url`, `prompt`); `agente` de `agent_id`/`agent_type` |
 | `PostToolUse` / `PostToolUseFailure` | `ferramenta.fim` com `ok` |
 | `SubagentStart` / `SubagentStop` | `subagente.inicio` / `subagente.fim` |
 | `PermissionRequest`, `Notification` (permission_prompt, idle_prompt) | `aguardando` |
 | `Stop` | `parado` |
 | `SessionEnd` | `sessao.fim` |
 
-Tokens: os hooks não trazem uso de tokens. No `Stop`, o tradutor lê as últimas 50 linhas do `transcript_path`, soma `message.usage` quando existir e emite `tokens`. É melhor esforço: o formato do transcrito é interno ao Claude Code, então qualquer erro de leitura é silencioso e desligável com `--sem-transcritos`.
+Tokens: os hooks não trazem uso de tokens. No `Stop`, o tradutor lê as últimas 50 linhas do `transcript_path`, localiza a entrada de assistente mais recente com `message.usage` e emite `tokens` com `contexto` = `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` (tamanho atual do contexto) e `saida` = `output_tokens` dessa mensagem. Como cada `Stop` reporta só a última mensagem, não há dupla contagem. É melhor esforço: o formato do transcrito é interno ao Claude Code, então qualquer erro de leitura é silencioso e desligável com `--sem-transcritos`.
 
 Instalação: `node server.mjs instalar claude` faz merge em `~/.claude/settings.json` preservando hooks existentes, grava backup `settings.json.bak-<timestamp>`, é idempotente (não duplica) e `desinstalar claude` remove só as entradas do Escritório.
 
@@ -223,7 +223,8 @@ Fora da v1 (não estão instalados aqui para teste). Entram pelo protocolo gené
 
 - Canvas 2D com resolução lógica de 960x576 (30x18 tiles de 32 px), escalado ao tamanho da janela mantendo proporção, `image-rendering: pixelated`.
 - `mundo.js` define o layout fixo: mapa de tiles (piso, parede, tapete), salas como retângulos com porta e postos (mesa, cadeira, estante) onde os personagens param, corredor central e grafo de waypoints. Caminho por busca em largura no grafo; movimento interpolado no cliente.
-- Personagens: advogado (sprite do cargo, crachá da CLI, nome do projeto embaixo), estagiário (sprite menor orbitando o advogado ou parado no posto da sua sala), balão com ferramenta e detalhe, indicador de estado (reticências para pensando, zzz para ocioso, ponto de interrogação para aguardando). Animação procedural: balanço ao andar, espelhamento pela direção, overlay de digitação ao trabalhar.
+- Personagens: advogado (sprite do cargo, crachá da CLI, nome do projeto embaixo), estagiário (sprite menor que caminha para a sala da sua ferramenta e, sem ferramenta, orbita o advogado), balão com ferramenta e detalhe, indicador de estado (reticências para pensando, zzz para ocioso, ponto de interrogação para aguardando). Animação procedural: balanço ao andar, espelhamento pela direção, overlay de digitação ao trabalhar.
+- Lotação: cada sala tem um número fixo de postos definido em `mundo.js`; quem chega sem posto livre fica em pé junto à porta. O mapa desenha até 24 advogados; os demais aparecem só no painel lateral, com aviso.
 - HUD: barra superior com título, contagem de advogados por CLI e alternância de idioma; painel lateral colapsável com advogados agrupados por projeto; clique no personagem ou na lista abre a Ficha do caso: prompt, CLI, modelo e cargo, sala, ações recentes, tokens quando houver, estagiários ativos.
 - Estado local: idioma e painel aberto em `localStorage`, com try/catch.
 - Acessibilidade mínima: a lista do painel espelha o mapa em texto; cores com contraste e nunca como único sinal.
