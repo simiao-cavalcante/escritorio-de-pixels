@@ -1353,9 +1353,13 @@ Payload não mapeado não vira erro: conta como `ignorados` em `GET /saude`.
 
 ## Claude Code
 
-Arquivo: `~/.claude/settings.json`. Hooks `http`, porque o Claude Code os oferece
-nativamente. Conteúdo de `adaptadores/claude.hooks.json` (aqui com um evento por linha
-para caber na página; o arquivo é gravado expandido):
+Arquivo: `~/.claude/settings.json`. Hooks `command` com `curl` e `async: true` (o Claude Code
+não espera nem mostra erro quando o servidor está fora do ar). Conteúdo de
+`adaptadores/claude.hooks.json` (aqui com um evento por linha para caber na página; o arquivo é
+gravado expandido). REGRA DE EXECUÇÃO: antes de escrever `docs/adaptadores.md`, regenere cada
+bloco JSON deste documento a partir do arquivo real da branch (`cat adaptadores/<cli>.hooks.json`),
+porque os instaladores mudaram durante a captura real; os blocos abaixo são a forma esperada,
+não a fonte da verdade:
 
 ```json
 {
@@ -1421,23 +1425,25 @@ Particularidades:
 ## Grok
 
 Arquivo próprio: `~/.grok/hooks/escritorio.json` (o Grok lê os arquivos do diretório
-`hooks/`). Hooks `http`. Conteúdo de `adaptadores/grok.hooks.json`:
+`hooks/`). Hooks `command` com `curl` (o Grok 1.0.34 recusa hooks `http` para `http://`).
+Conteúdo de `adaptadores/grok.hooks.json`:
 
 ```json
 {
   "hooks": {
-    "SessionStart": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "SessionEnd": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "UserPromptSubmit": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "PreToolUse": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "PostToolUse": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "PostToolUseFailure": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "Notification": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "SubagentStart": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "SubagentStop": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "Stop": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "StopFailure": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }],
-    "StopCancelled": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/grok", "timeout": 2 }] }]
+    "SessionStart": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "SessionEnd": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "PreToolUse": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "PostToolUse": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "PostToolUseFailure": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "PermissionDenied": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "Notification": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "SubagentStart": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "SubagentStop": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "StopFailure": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}],
+    "StopCancelled": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true", "timeout": 2}]}]
   }
 }
 ```

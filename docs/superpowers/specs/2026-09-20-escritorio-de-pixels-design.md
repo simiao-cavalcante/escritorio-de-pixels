@@ -240,7 +240,7 @@ Mudança de modelo durante a sessão (evento com `modelo` diferente) troca o car
 
 ## 7. Adaptadores
 
-Princípio: a tradução do payload nativo para evento v1 fica no servidor, em `POST /hook/<cli>`. Do lado da CLI o adaptador é só um trecho de configuração de hook: tipo `http` quando a CLI oferece (Claude Code, Grok), senão tipo `command` com `curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:<porta>/hook/<cli>`. Nenhum hook instalado bloqueia o agente: o servidor responde `204` sem corpo, o timeout é de 2 s e uma queda do Escritório é ignorada pela CLI.
+Princípio: a tradução do payload nativo para evento v1 fica no servidor, em `POST /hook/<cli>`. Do lado da CLI o adaptador é só um trecho de configuração de hook: tipo `command` com `curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:<porta>/hook/<cli>`. Nenhum hook instalado bloqueia o agente: o servidor responde `204` sem corpo, o timeout é de 2 s e uma queda do Escritório é ignorada pela CLI. Decisão tomada na captura real (2026-09-21): nenhuma CLI usa hook `http`. O Grok 1.0.34 recusa hooks `http` para endereços `http://` (aceita só `https://`), e no Claude Code um hook `http` sem servidor no ar mostra um erro de conexão a cada ferramenta; o hook `command` com `curl ... || true` é silencioso, e no Claude Code leva `async: true`, que dispensa espera.
 
 ### Matriz de capacidades da v1
 
@@ -281,7 +281,7 @@ Payload nativo desconhecido (evento não mapeado) é contado em `/saude` como `i
 
 ### Claude Code (confirmado na documentação de hooks)
 
-Hooks do tipo `http` para `/hook/claude`, instalados em `~/.claude/settings.json`. Payload em snake_case: `hook_event_name`, `session_id`, `transcript_path`, `cwd`, `permission_mode`, `tool_name`, `tool_input`, `tool_use_id`, `agent_id`, `agent_type`, `prompt`; `model` só em `SessionStart`.
+Hooks do tipo `command` (`curl` para `/hook/claude`, com `async: true`: o Claude Code não espera a resposta nem exibe erro quando o servidor está fora do ar), instalados em `~/.claude/settings.json`. Payload em snake_case: `hook_event_name`, `session_id`, `transcript_path`, `cwd`, `permission_mode`, `tool_name`, `tool_input`, `tool_use_id`, `agent_id`, `agent_type`, `prompt`; `model` só em `SessionStart`.
 
 Tokens (melhor esforço, desligável com `--sem-transcritos`): no `Stop`, o tradutor lê no máximo os últimos 64 KB do `transcript_path`, que precisa estar dentro de `~/.claude/projects/`; percorre as entradas de assistente com `message.usage` e `uuid`, ignora as já processadas nesta sessão (guarda o último `uuid` visto) e emite `tokens` com `contexto` = `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` da entrada mais recente e `saidaIncremento` = soma de `output_tokens` das entradas novas. Se a janela de 64 KB não alcançar o último `uuid` processado, a soma é parcial e continua marcada como estimada. O formato do transcrito é interno ao Claude Code: qualquer erro de leitura é silencioso.
 
@@ -295,9 +295,9 @@ Tokens: no `Stop`, o tradutor lê no máximo os últimos 64 KB do `transcript_pa
 
 O mecanismo `notify` não é usado: só emite `agent-turn-complete`, sem modelo nem tokens, e aceita um único comando, que nesta máquina já está ocupado por outra ferramenta.
 
-### Grok CLI (hooks nativos com `type: "http"`; documentação local em `~/.grok/docs/user-guide/10-hooks.md`)
+### Grok CLI (hooks nativos; documentação local em `~/.grok/docs/user-guide/10-hooks.md`)
 
-Arquivo próprio `~/.grok/hooks/escritorio.json` com hooks `http` para `/hook/grok`. Eventos: `session_start`, `session_end`, `user_prompt_submit`, `pre_tool_use`, `post_tool_use`, `post_tool_use_failure`, `permission_denied`, `notification`, `subagent_start`, `subagent_stop`, `stop`, `stop_failure`, `stop_cancelled`. Envelope em camelCase: `hookEventName`, `sessionId`, `cwd`, `workspaceRoot`, `timestamp`, `permissionMode`, `promptId`, `toolName`, `toolInput`.
+Arquivo próprio `~/.grok/hooks/escritorio.json` com hooks `command` (`curl`) para `/hook/grok`; o Grok 1.0.34 recusa hooks `http` para endereços `http://`, confirmado na captura real. Eventos: `session_start`, `session_end`, `user_prompt_submit`, `pre_tool_use`, `post_tool_use`, `post_tool_use_failure`, `permission_denied`, `notification`, `subagent_start`, `subagent_stop`, `stop`, `stop_failure`, `stop_cancelled`. Envelope em camelCase: `hookEventName`, `sessionId`, `cwd`, `workspaceRoot`, `timestamp`, `permissionMode`, `promptId`, `toolName`, `toolInput`.
 
 O Grok importa automaticamente os hooks de `~/.claude/settings.json` e `~/.cursor/hooks.json`, com alias de nomes de ferramenta (confirmado em `~/.grok/logs/hooks.log`). Por isso `/hook/claude` e `/hook/cursor` reconhecem o envelope do Grok pela chave `hookEventName` e rotulam `cli: grok`; a deduplicação elimina o evento em dobro quando o arquivo dedicado também está instalado.
 
@@ -425,7 +425,7 @@ Ordem de execução do plano: (1) fixtures reais dos payloads de Claude, Codex, 
 
 - Formato de hooks muda: tradutores isolados, com fixtures, falha silenciosa contada em `/saude` e teste que quebra cedo.
 - Arte inconsistente entre imagens: preâmbulo por categoria, paleta comum, hash por asset, placeholders como rede de segurança.
-- Latência dos hooks http no Claude Code: timeout de 2 s; alternativa documentada com hook `command` assíncrono.
+- Ruído e latência dos hooks no Claude Code: hook `command` assíncrono (`async: true`), sem espera e sem erro visível com o servidor fora do ar; o hook `http` fica só como alternativa documentada.
 - Escopo crescer: v1 termina quando a demo e os adaptadores de Claude Code, Codex, Grok e Cursor funcionam de ponta a ponta nesta máquina com arte gerada; Gemini sai documentado e não testado; OpenCode e demais viram issues.
 
 ## Anexo: triagem da revisão do GPT-6 Astra
