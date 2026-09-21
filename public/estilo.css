@@ -50,7 +50,7 @@ body {
 }
 .botao:focus-visible, .linha:focus-visible { outline: 2px solid var(--realce); outline-offset: 2px; }
 
-.palco { display: flex; justify-content: center; padding: 8px 0; }
+.palco { display: flex; justify-content: center; padding: 0; } /* sem padding vertical: escalaDaTela só desconta a barra */
 .com-painel .palco { margin-right: var(--largura-painel); } /* o canvas se centraliza no que sobra */
 
 #tela {
