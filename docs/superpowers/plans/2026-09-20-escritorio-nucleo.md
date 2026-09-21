@@ -90,6 +90,7 @@ node_modules/
 .env
 /tmp/
 test/fixtures/brutos/
+.superpowers/
 ```
 
 `LICENSE`: texto MIT padrão com `Copyright (c) 2026 Simião Cavalcante`.
@@ -1997,7 +1998,8 @@ test('SessionStart, prompt, ferramentas, subagentes, permissões e fim', () => {
   const sub = t({ ...comum, hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: 'b' }, tool_use_id: 't2', agent_id: 'ag1', agent_type: 'Explore' });
   assert.deepEqual(sub[0].agente, { id: 'ag1', tipo: 'Explore' });
   const si = t({ ...comum, hook_event_name: 'SubagentStart', agent_id: 'ag1', agent_type: 'Explore' });
-  assert.deepEqual(si[0], { ...si[0], tipo: 'subagente.inicio', agente: { id: 'ag1', tipo: 'Explore' } });
+  assert.equal(si[0].tipo, 'subagente.inicio');
+  assert.deepEqual(si[0].agente, { id: 'ag1', tipo: 'Explore' });
   assert.equal(t({ ...comum, hook_event_name: 'SubagentStop', agent_id: 'ag1', agent_type: 'Explore' })[0].tipo, 'subagente.fim');
   assert.equal(t({ ...comum, hook_event_name: 'PermissionRequest', tool_name: 'Bash' })[0].motivo, 'permissao');
   assert.equal(t({ ...comum, hook_event_name: 'Notification', notification_type: 'permission_prompt' })[0].tipo, 'aguardando');
