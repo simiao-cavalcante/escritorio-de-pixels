@@ -7,11 +7,14 @@ para assets largos, `1024x1536` para altos e `1024x1024` para os quadrados), e d
 pós-processados localmente por `arte/gerar.py` com Pillow:
 
 1. alfa binarizado em 128 (pixel art não tem borda semitransparente);
-2. personagens e móveis recortados pela caixa de conteúdo, reduzidos com
-   nearest-neighbor preservando a proporção e ancorados na base central do tile;
+2. personagens e móveis recortados pela caixa de conteúdo, reduzidos por média de área
+   (BOX) preservando a proporção e ancorados na base central do tile; a redução é de 30 a
+   50 vezes, e com nearest-neighbor as linhas de dobra e sombra viravam chuvisco;
 3. pisos reduzidos direto ao tile de 32x32;
 4. tudo quantizado à paleta comum de 32 cores de `arte/paleta.py` (`arte/paleta.png`),
-   sem dither.
+   sem dither;
+5. personagens e móveis recebem um contorno de 1 px na cor escura da paleta em todo pixel
+   opaco que toca um transparente, devolvendo a silhueta que a média diluiu.
 
 Cada entrada de `public/arte/atlas.json` carrega um `hash` de 12 caracteres que cobre
 modelo, preâmbulo da categoria, prompt, tamanho e qualidade: mudar qualquer um deles faz

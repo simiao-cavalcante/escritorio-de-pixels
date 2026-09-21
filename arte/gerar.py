@@ -22,7 +22,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from paleta import imagem_paleta
+from paleta import PALETA, imagem_paleta
 
 RAIZ = Path(__file__).resolve().parent.parent
 MANIFESTO = RAIZ / "arte" / "manifesto.json"
@@ -94,8 +94,13 @@ def alfa_binario(img, limiar=128):
     return img.getchannel("A").point(lambda v: 255 if v >= limiar else 0)
 
 
-def ajustar_sujeito(img, largura_alvo, altura_alvo):
-    """Personagem ou móvel: recorta pelo alfa, reduz preservando a proporção e ancora na base central."""
+def ajustar_sujeito(img, largura_alvo, altura_alvo, filtro=Image.BOX):
+    """Personagem ou móvel: recorta pelo alfa, reduz preservando a proporção e ancora na base central.
+
+    BOX (média de área), não NEAREST: a redução é de 30 a 50 vezes, e com NEAREST cada pixel final
+    é uma amostra solta da bruta, então as linhas de dobra e sombra do terno ou dos livros caem
+    ao acaso e viram chuvisco. A média devolve campos chapados; o contorno vem depois (contornar).
+    """
     img = img.convert("RGBA")
     img.putalpha(alfa_binario(img))
     caixa = img.getchannel("A").getbbox()
@@ -104,10 +109,31 @@ def ajustar_sujeito(img, largura_alvo, altura_alvo):
     escala = min(largura_alvo / img.width, altura_alvo / img.height)
     largura = max(1, min(largura_alvo, round(img.width * escala)))
     altura = max(1, min(altura_alvo, round(img.height * escala)))
-    reduzida = img.resize((largura, altura), Image.NEAREST)
+    reduzida = img.resize((largura, altura), filtro)
+    reduzida.putalpha(alfa_binario(reduzida))  # a média deixa a borda semitransparente
     tela = Image.new("RGBA", (largura_alvo, altura_alvo), (0, 0, 0, 0))
     tela.paste(reduzida, ((largura_alvo - largura) // 2, altura_alvo - altura))
     return tela
+
+
+def contornar(img, cor=None):
+    """Pinta com a cor de contorno da paleta todo pixel opaco que toca (4 vizinhos) um transparente.
+    A redução por média dilui o traço de 1 px da bruta; isto devolve uma silhueta nítida no piso."""
+    cor = (PALETA[0] + (255,)) if cor is None else cor
+    saida = img.copy()
+    alfa = saida.getchannel("A").load()
+    pixels = saida.load()
+    largura, altura = saida.size
+    for y in range(altura):
+        for x in range(largura):
+            if alfa[x, y] < 128:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if nx < 0 or ny < 0 or nx >= largura or ny >= altura or alfa[nx, ny] < 128:
+                    pixels[x, y] = cor
+                    break
+    return saida
 
 
 def ajustar_piso(img, largura_alvo, altura_alvo):
@@ -129,10 +155,8 @@ def quantizar(img, paleta=None):
 def processar(img, asset, paleta=None):
     """Imagem crua da API → PNG final no tamanho, na âncora e na paleta do asset."""
     if asset["categoria"] == "piso":
-        ajustada = ajustar_piso(img, asset["w"], asset["h"])
-    else:
-        ajustada = ajustar_sujeito(img, asset["w"], asset["h"])
-    return quantizar(ajustada, paleta)
+        return quantizar(ajustar_piso(img, asset["w"], asset["h"]), paleta)
+    return contornar(quantizar(ajustar_sujeito(img, asset["w"], asset["h"]), paleta))
 
 
 # ------------------------------------------------------------------------ API
