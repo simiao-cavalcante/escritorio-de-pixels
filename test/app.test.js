@@ -31,6 +31,66 @@ function bruto({ porta, metodo = 'GET', caminho = '/', headers = {}, corpo }) {
 
 const ev = (extra) => ({ v: 1, cli: 'claude', sessao: 's1', ...extra });
 
+/**
+ * Conecta ao /fluxo (via `request` cru, não `fetch`, para casar com `bruto`) e devolve
+ * `esperar(tipo)`: resolve com o payload já decodificado do PRÓXIMO evento SSE desse tipo.
+ *
+ * Um único listener de `data`, registrado uma vez na conexão, acumula tudo num buffer
+ * (decodificado com TextDecoder `{ stream: true }`, para não partir um caractere multibyte
+ * no meio — ex. o "ç" de "Recepção" cortado entre dois chunks). `esperar` nunca desliga esse
+ * listener: se o tipo pedido já está no buffer, resolve na hora; senão, entra numa fila de
+ * resolvers pendentes atendida assim que o bloco chegar. Isso evita a janela onde um evento
+ * que chega entre duas chamadas de `esperar` (por exemplo durante um `await` de outra
+ * requisição) seria descartado e travaria o teste para sempre.
+ */
+function conectarFluxo(porta) {
+  return new Promise((resolve, reject) => {
+    const req = request({ host: '127.0.0.1', port: porta, method: 'GET', path: '/fluxo', headers: { host: `127.0.0.1:${porta}` } });
+    req.on('error', reject);
+    req.on('response', (res) => {
+      let buffer = '';
+      const dec = new TextDecoder();
+      const pendentes = [];
+
+      function extrair(tipo) {
+        const i = buffer.indexOf(`event: ${tipo}\n`);
+        if (i < 0) return undefined;
+        const fim = buffer.indexOf('\n\n', i);
+        if (fim < 0) return undefined;
+        const bloco = buffer.slice(i, fim);
+        buffer = buffer.slice(fim + 2);
+        return JSON.parse(bloco.split('\ndata: ')[1]);
+      }
+
+      function atenderPendentes() {
+        for (let i = 0; i < pendentes.length; i += 1) {
+          const valor = extrair(pendentes[i].tipo);
+          if (valor === undefined) continue;
+          const { resolve: resolverPendente } = pendentes[i];
+          pendentes.splice(i, 1);
+          resolverPendente(valor);
+          atenderPendentes(); // buffer pode ter mais de um bloco completo após um chunk
+          return;
+        }
+      }
+
+      res.on('data', (chunk) => {
+        buffer += dec.decode(chunk, { stream: true });
+        atenderPendentes();
+      });
+
+      function esperar(tipo) {
+        const pronto = extrair(tipo);
+        if (pronto !== undefined) return Promise.resolve(pronto);
+        return new Promise((resolverPendente) => pendentes.push({ tipo, resolve: resolverPendente }));
+      }
+
+      resolve({ res, esperar });
+    });
+    req.end();
+  });
+}
+
 test('POST /eventos aplica e GET /estado reflete; Host estranho recebe 421; Origin externo 403', async () => {
   const { app, porta, url } = await subir();
   try {
@@ -48,6 +108,13 @@ test('POST /eventos aplica e GET /estado reflete; Host estranho recebe 421; Orig
     assert.equal((await fetch(url('/nada'))).status, 404);
     // fetch() normaliza `/../package.json` para `/package.json` antes de enviar, então nunca
     // exercitava a travessia de verdade; `bruto` manda os bytes crus no path da requisição.
+    // Mesmo assim, o 404 abaixo não vem do guard `startsWith(dirPublico + sep)`: o parser de
+    // URL do Node já resolve o `..` do pathname antes de chegar em `servirEstatico`, então
+    // `/../package.json` vira pedido de `public/package.json`, que não existe (o package.json
+    // real está na raiz do repo, fora de `public/`) — o 404 é do `readFile` falhar (ENOENT),
+    // não do guard. `%2e%2e` nem chega a virar `..` (o parser não decodifica o path), então cai
+    // no mesmo ENOENT por outro motivo. O guard é defesa em profundidade e não é exercitado por
+    // este teste.
     assert.equal((await bruto({ porta, caminho: '/../package.json', headers: { host: `127.0.0.1:${porta}` } })).status, 404);
     assert.equal((await bruto({ porta, caminho: '/%2e%2e/package.json', headers: { host: `127.0.0.1:${porta}` } })).status, 404);
   } finally {
@@ -163,6 +230,11 @@ test('nomes de CLI hostis (__proto__, constructor) não poluem Object.prototype 
     for (const chave of Object.keys(saude)) {
       assert.equal(Number.isNaN(saude[chave].invalidos), false, `${chave}.invalidos não pode ser NaN`);
     }
+    // Não basta não quebrar: o caminho genérico precisa ter de fato funcionado para um nome
+    // hostil, não só devolvido 204 em silêncio sem processar nada.
+    assert.equal(saude.constructor.eventos, 1);
+    const estado = await (await fetch(url('/estado'))).json();
+    assert.ok(estado.advogados.some((a) => a.cli === 'constructor'), 'esperava advogado do cli "constructor" em /estado');
   } finally {
     await app.fechar();
   }
@@ -171,41 +243,33 @@ test('nomes de CLI hostis (__proto__, constructor) não poluem Object.prototype 
 test('tique com saúde suja emite delta saude no SSE, com seq maior que o do snapshot', async () => {
   const { app, porta } = await subir({ tiqueMs: 20 });
   try {
-    const res = await new Promise((resolve, reject) => {
-      const req = request({ host: '127.0.0.1', port: porta, method: 'GET', path: '/fluxo', headers: { host: `127.0.0.1:${porta}` } });
-      req.on('response', resolve);
-      req.on('error', reject);
-      req.end();
-    });
-    let buffer = '';
-    function proximo(tipo) {
-      return new Promise((resolve) => {
-        function tentar() {
-          const i = buffer.indexOf(`event: ${tipo}\n`);
-          if (i < 0) return false;
-          const fim = buffer.indexOf('\n\n', i);
-          if (fim < 0) return false;
-          const bloco = buffer.slice(i, fim);
-          buffer = buffer.slice(fim + 2);
-          res.off('data', onData);
-          resolve(JSON.parse(bloco.split('\ndata: ')[1]));
-          return true;
-        }
-        function onData(chunk) {
-          buffer += chunk.toString('utf8');
-          tentar();
-        }
-        if (!tentar()) res.on('data', onData);
-      });
-    }
-    const snap = await proximo('snapshot');
+    const { res, esperar } = await conectarFluxo(porta);
+    const snap = await esperar('snapshot');
     await bruto({
       porta, metodo: 'POST', caminho: '/eventos',
       headers: { host: `127.0.0.1:${porta}`, 'content-type': 'application/json' },
       corpo: JSON.stringify(ev({ tipo: 'prompt', prompt: 'oi' })),
     });
-    const delta = await proximo('saude');
+    const delta = await esperar('saude');
     assert.ok(delta.seq > snap.seq, `esperava seq(saude)=${delta.seq} > seq(snapshot)=${snap.seq}`);
+    res.destroy();
+  } finally {
+    await app.fechar();
+  }
+});
+
+test('POST /hook/claude com JSON inválido soma invalidos do claude e emite delta saude no SSE', async () => {
+  const { app, porta } = await subir({ tiqueMs: 20 });
+  try {
+    const { res, esperar } = await conectarFluxo(porta);
+    await esperar('snapshot');
+    await bruto({
+      porta, metodo: 'POST', caminho: '/hook/claude',
+      headers: { host: `127.0.0.1:${porta}`, 'content-type': 'application/json' },
+      corpo: '{nope',
+    });
+    const delta = await esperar('saude');
+    assert.equal(delta.saude.claude.invalidos, 1);
     res.destroy();
   } finally {
     await app.fechar();

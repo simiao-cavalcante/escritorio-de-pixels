@@ -102,6 +102,16 @@ export function criarAplicacao({
   let timerTique;
   let saudeSuja = false;
 
+  // Incrementa um contador de saúde de uma CLI e marca a flag que dispara o próximo delta
+  // `saude` no SSE (ver timerTique em iniciar()). Centraliza os pontos que mudam `saude`
+  // fora do laço principal de `ingerir`: limite de tamanho (413), JSON inválido de hook e
+  // evento sem tradução — sem isto o painel de saúde não recebia delta justamente quando
+  // uma CLI manda lixo.
+  function incrementarSaude(cli, campo, quantidade = 1) {
+    saudeDe(cli)[campo] += quantidade;
+    saudeSuja = true;
+  }
+
   function snapshot() {
     return {
       ...escritorio.snapshot(),
@@ -128,8 +138,7 @@ export function criarAplicacao({
     }
     const { eventos, rejeitados } = normalizarLote(lista, agora);
     const s = saudeDe(origem);
-    s.invalidos += rejeitados.length;
-    saudeSuja = true;
+    if (rejeitados.length) incrementarSaude(origem, 'invalidos', rejeitados.length);
     let aceitos = 0;
     for (const ev of eventos) {
       if (!inedito(ev)) continue;
@@ -138,6 +147,9 @@ export function criarAplicacao({
       s.eventos += 1;
       s.ultimoEvento = new Date(agora()).toISOString();
     }
+    // Só marca a flag quando algum contador de fato mudou: lote vazio ou totalmente
+    // deduplicado não deve gerar delta de saúde no SSE.
+    if (aceitos) saudeSuja = true;
     return { aceitos, rejeitados };
   }
 
@@ -188,7 +200,7 @@ export function criarAplicacao({
         if (demo) return responder(res, 503, { erro: 'modo demo não aceita eventos externos' });
         const corpo = await lerCorpo(req, LIMITES.corpoEventos);
         if (corpo.erro) {
-          if (corpo.erro === 413) saudeDe('eventos').rejeitadosPorTamanho += 1;
+          if (corpo.erro === 413) incrementarSaude('eventos', 'rejeitadosPorTamanho');
           return responder(res, corpo.erro, { erro: corpo.erro === 413 ? 'corpo excede 64 KB' : 'corpo inválido' });
         }
         let json;
@@ -205,7 +217,7 @@ export function criarAplicacao({
         const cliRota = m[1] === 'generico' ? limparCli(url.searchParams.get('cli')) : m[1];
         const corpo = await lerCorpo(req, LIMITES.corpoHook);
         if (corpo.erro) {
-          if (corpo.erro === 413) saudeDe(cliRota).rejeitadosPorTamanho += 1;
+          if (corpo.erro === 413) incrementarSaude(cliRota, 'rejeitadosPorTamanho');
           res.writeHead(corpo.erro);
           return res.end();
         }
@@ -213,12 +225,12 @@ export function criarAplicacao({
         try {
           payload = JSON.parse(corpo.texto);
         } catch {
-          saudeDe(cliRota).invalidos += 1;
+          incrementarSaude(cliRota, 'invalidos');
           res.writeHead(204);
           return res.end();
         }
         const { cli, eventos } = traduzir(cliRota, payload);
-        if (eventos === null) saudeDe(cli).ignorados += 1;
+        if (eventos === null) incrementarSaude(cli, 'ignorados');
         else ingerir(eventos, cli);
         res.writeHead(204);
         return res.end();
