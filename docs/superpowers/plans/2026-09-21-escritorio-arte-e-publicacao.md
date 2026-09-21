@@ -1364,17 +1364,17 @@ não a fonte da verdade:
 ```json
 {
   "hooks": {
-    "SessionStart": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "UserPromptSubmit": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "PreToolUse": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "PostToolUse": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "PostToolUseFailure": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "SubagentStart": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "SubagentStop": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "PermissionRequest": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "Notification": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "Stop": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }],
-    "SessionEnd": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:7777/hook/claude", "timeout": 2 }] }]
+    "SessionStart": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "PreToolUse": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "PostToolUse": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "PostToolUseFailure": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "SubagentStart": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "SubagentStop": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "PermissionRequest": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "Notification": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}],
+    "SessionEnd": [{"hooks": [{"type": "command", "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true", "async": true}]}]
   }
 }
 ```
