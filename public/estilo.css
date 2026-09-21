@@ -1,0 +1,126 @@
+/* Chrome do HUD: fundo da página, painel, bordas e fontes. Cores de entidades (cargo, sala, piso,
+   saúde, crachá) vêm de cores.js. --altura-barra e --largura-painel espelham ALTURA_BARRA e
+   LARGURA_PAINEL de hud-util.js, que o canvas usa para se escalar. */
+:root {
+  --fundo: #17150f;
+  --painel: #201d16;
+  --linha: #2e2a20;
+  --texto: #e8e2d2;
+  --suave: #a29a86;
+  --realce: #c2603e;
+  --altura-barra: 48px;
+  --largura-painel: 290px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: var(--altura-barra);
+  padding: 0 12px;
+  background: var(--painel);
+  border-bottom: 1px solid var(--linha);
+}
+
+.titulo { font-size: 14px; margin: 0; letter-spacing: 1px; }
+.clis, .saude { display: flex; align-items: center; gap: 10px; }
+.saude { margin-left: auto; color: var(--suave); }
+.cli, .adaptador { display: inline-flex; align-items: center; gap: 4px; }
+.ponto { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.rotulo { color: var(--suave); }
+
+.botao {
+  background: var(--linha);
+  color: var(--texto);
+  border: 1px solid #3c3729;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.botao:focus-visible, .linha:focus-visible { outline: 2px solid var(--realce); outline-offset: 2px; }
+
+.palco { display: flex; justify-content: center; padding: 0; } /* sem padding vertical: escalaDaTela só desconta a barra */
+.com-painel .palco { margin-right: var(--largura-painel); } /* o canvas se centraliza no que sobra */
+
+#tela {
+  image-rendering: pixelated;
+  background: #000;
+  border: 1px solid var(--linha);
+}
+
+.painel {
+  position: fixed;
+  top: var(--altura-barra);
+  right: 0;
+  width: var(--largura-painel);
+  height: calc(100vh - var(--altura-barra));
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--painel);
+  border-left: 1px solid var(--linha);
+}
+.painel[hidden] { display: none; }
+.painel-titulo { font-size: 12px; margin: 4px 0 10px; color: var(--suave); text-transform: uppercase; }
+.projeto { margin-bottom: 12px; }
+.projeto h3 { font-size: 12px; color: var(--suave); margin: 6px 0; text-transform: uppercase; }
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 3px;
+  padding: 5px 6px;
+  background: transparent;
+  color: var(--texto);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.linha:hover { background: var(--linha); }
+.linha.selecionada { border-color: var(--realce); }
+.linha .sala, .linha .estado { color: var(--suave); font-size: 11px; }
+.linha .aviso { margin-left: auto; color: var(--realce); font-size: 10px; }
+.vazio { color: var(--suave); }
+
+.ficha {
+  position: fixed;
+  top: 64px;
+  left: 16px;
+  width: 340px;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--painel);
+  border: 1px solid var(--realce);
+  border-radius: 4px;
+}
+.ficha[hidden] { display: none; }
+.ficha h2 { font-size: 13px; margin: 0 0 8px; }
+.ficha h3 { font-size: 12px; margin: 12px 0 4px; color: var(--suave); }
+.ficha .fechar { float: right; }
+.campo { display: flex; gap: 8px; margin: 3px 0; }
+.campo .rotulo { min-width: 92px; color: var(--suave); }
+.campo .valor { word-break: break-word; }
+.acoes, .estagiarios { margin: 0; padding-left: 16px; }
+.acoes li, .estagiarios li { margin: 2px 0; }
+
+.barra-tokens { height: 7px; background: var(--linha); border-radius: 3px; overflow: hidden; margin: 4px 0; }
+.barra-tokens .preenchida { height: 100%; background: var(--realce); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

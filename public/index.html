@@ -4,11 +4,14 @@
 <meta charset="utf-8">
 <title>Escritório de Pixels</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>body{font-family:system-ui,sans-serif;background:#1b1a17;color:#e8e2d2;margin:0;padding:32px 16px;max-width:720px}code{background:#2b2924;padding:2px 6px;border-radius:4px}</style>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="estilo.css">
 </head>
 <body>
-<h1>Escritório de Pixels</h1>
-<p>O servidor está no ar. O cliente em pixel art chega no Plano 2.</p>
-<p>Enquanto isso: <code>GET /estado</code> mostra o escritório em JSON, <code>GET /saude</code> mostra os adaptadores e <code>GET /fluxo</code> é o fluxo SSE.</p>
+<div id="hud"></div>
+<main class="palco">
+  <canvas id="tela" width="960" height="576" aria-label="Escritório em pixel art"></canvas>
+</main>
+<script type="module" src="escritorio.js"></script>
 </body>
 </html>

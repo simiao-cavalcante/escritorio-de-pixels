@@ -65,6 +65,12 @@ export function criarClassificador(config) {
     crachaDaCli(cli) {
       return Object.hasOwn(config.clis, cli) ? config.clis[cli] : config.cliPadrao;
     },
+    /** Mapa de crachás para o snapshot; cópia, para o cliente não mexer na config. */
+    listarCrachas() {
+      const clis = {};
+      for (const [nome, cracha] of Object.entries(config.clis)) clis[nome] = { ...cracha };
+      return { clis, padrao: { ...config.cliPadrao } };
+    },
   };
 }
 
