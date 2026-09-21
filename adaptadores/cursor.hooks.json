@@ -1,0 +1,59 @@
+{
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/cursor >/dev/null 2>&1 || true",
+        "timeout": 2
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/cursor >/dev/null 2>&1 || true",
+        "timeout": 2
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/cursor >/dev/null 2>&1 || true",
+        "timeout": 2
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/cursor >/dev/null 2>&1 || true",
+        "timeout": 2
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/cursor >/dev/null 2>&1 || true",
+        "timeout": 2
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/cursor >/dev/null 2>&1 || true",
+        "timeout": 2
+      }
+    ],
+    "subagentStart": [
+      {
+        "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/cursor >/dev/null 2>&1 || true",
+        "timeout": 2
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/cursor >/dev/null 2>&1 || true",
+        "timeout": 2
+      }
+    ],
+    "stop": [
+      {
+        "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/cursor >/dev/null 2>&1 || true",
+        "timeout": 2
+      }
+    ]
+  },
+  "version": 1
+}
