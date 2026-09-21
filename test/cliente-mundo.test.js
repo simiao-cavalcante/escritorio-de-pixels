@@ -132,16 +132,27 @@ test('posicaoJuntoAPorta fica dentro da sala e varia por índice', () => {
   }
 });
 
-test('posicaoJuntoAPorta dá seis posições distintas e interiores em toda sala', () => {
+test('posicaoJuntoAPorta percorre só o interior livre: distinta, dentro da sala e fora de posto, móvel e decoração', () => {
   for (const id of IDS) {
     const s = SALAS[id];
-    const vistos = new Set();
-    for (let i = 0; i < 6; i += 1) {
-      const p = posicaoJuntoAPorta(id, i);
-      assert.ok(p.x > s.x0 && p.x < s.x1 && p.y > s.y0 && p.y < s.y1, `${id}: ${p.x},${p.y} fora do interior`);
-      vistos.add(`${p.x},${p.y}`);
+    const ocupados = new Set();
+    for (const p of s.postos) {
+      ocupados.add(`${p.x},${p.y}`);
+      if (p.movel) ocupados.add(`${p.movel.x},${p.movel.y}`);
     }
-    assert.equal(vistos.size, 6, `${id}: índices 0..5 deveriam dar seis posições distintas`);
+    for (const m of s.decoracao) ocupados.add(`${m.x},${m.y}`);
+    const livres = (s.x1 - s.x0 - 1) * (s.y1 - s.y0 - 1) - ocupados.size;
+    assert.ok(livres >= 5, `${id}: só ${livres} células livres`);
+
+    const vistos = new Set();
+    for (let i = 0; i < livres; i += 1) {
+      const p = posicaoJuntoAPorta(id, i);
+      const chave = `${p.x},${p.y}`;
+      assert.ok(p.x > s.x0 && p.x < s.x1 && p.y > s.y0 && p.y < s.y1, `${id}: ${chave} fora do interior`);
+      assert.equal(ocupados.has(chave), false, `${id}: ${chave} em cima de posto, móvel ou decoração`);
+      assert.equal(vistos.has(chave), false, `${id}: ${chave} repetida no índice ${i}`);
+      vistos.add(chave);
+    }
+    assert.deepEqual(posicaoJuntoAPorta(id, livres), posicaoJuntoAPorta(id, 0), `${id}: índice não dá a volta ao esgotar o interior livre`);
   }
-  assert.notDeepEqual(posicaoJuntoAPorta('cartorio', 0), posicaoJuntoAPorta('cartorio', 1));
 });

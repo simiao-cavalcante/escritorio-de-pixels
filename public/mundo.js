@@ -180,30 +180,44 @@ export function postosDaSala(sala) {
 }
 
 /**
- * Posição em pé junto à porta, para quem não achou posto livre. Índices consecutivos dão células
- * distintas do interior da sala, da mais perto da porta para a mais longe; cheia a primeira fila
- * rente à porta, a seguinte recua mais um tile para dentro. Nunca em cima da parede.
+ * Posição em pé junto à porta, para quem não achou posto livre: nunca em cima de posto, móvel ou
+ * decoração; percorre o interior livre a partir da porta. Índices consecutivos dão células
+ * distintas, da mais perto da porta para a mais longe; esgotada a lista, o índice dá a volta.
  */
 export function posicaoJuntoAPorta(sala, indice) {
   const s = SALAS[sala];
   const dentro = s.porta.y === s.y0 ? 1 : s.porta.y === s.y1 ? -1 : 0;
   const lado = dentro === 0 ? (s.porta.x === s.x0 ? 1 : -1) : 0;
   const i = Number.isFinite(indice) && indice > 0 ? Math.trunc(indice) : 0;
-  const preso = (v, min, max) => Math.min(Math.max(v, min), max);
   const perto = (a, b, centro) => Math.abs(a - centro) - Math.abs(b - centro) || a - b;
 
+  const ocupados = new Set();
+  for (const p of s.postos) {
+    ocupados.add(`${p.x},${p.y}`);
+    if (p.movel) ocupados.add(`${p.movel.x},${p.movel.y}`);
+  }
+  for (const m of s.decoracao) ocupados.add(`${m.x},${m.y}`);
+
+  const candidatos = [];
   if (dentro !== 0) {
-    // Porta na parede de cima ou de baixo: a fila corre pelas colunas do interior.
+    // Porta na parede de cima ou de baixo: cada fila (rumo ao fundo) percorre as colunas do interior.
     const colunas = [];
     for (let x = s.x0 + 1; x <= s.x1 - 1; x += 1) colunas.push(x);
     colunas.sort((a, b) => perto(a, b, s.porta.x));
-    const fila = 1 + Math.floor(i / colunas.length);
-    return { x: colunas[i % colunas.length], y: preso(s.porta.y + dentro * fila, s.y0 + 1, s.y1 - 1) };
+    for (let f = 1; f <= s.y1 - s.y0 - 1; f += 1) {
+      const y = s.porta.y + dentro * f;
+      for (const x of colunas) if (!ocupados.has(`${x},${y}`)) candidatos.push({ x, y });
+    }
+  } else {
+    // Porta numa parede lateral: cada fila (rumo ao fundo) percorre as linhas do interior.
+    const linhas = [];
+    for (let y = s.y0 + 1; y <= s.y1 - 1; y += 1) linhas.push(y);
+    linhas.sort((a, b) => perto(a, b, s.porta.y));
+    for (let f = 1; f <= s.x1 - s.x0 - 1; f += 1) {
+      const x = s.porta.x + lado * f;
+      for (const y of linhas) if (!ocupados.has(`${x},${y}`)) candidatos.push({ x, y });
+    }
   }
-  // Porta numa parede lateral: a fila corre pelas linhas do interior.
-  const linhas = [];
-  for (let y = s.y0 + 1; y <= s.y1 - 1; y += 1) linhas.push(y);
-  linhas.sort((a, b) => perto(a, b, s.porta.y));
-  const coluna = 1 + Math.floor(i / linhas.length);
-  return { x: preso(s.porta.x + lado * coluna, s.x0 + 1, s.x1 - 1), y: linhas[i % linhas.length] };
+  const { x, y } = candidatos[i % candidatos.length];
+  return { x, y };
 }

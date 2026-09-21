@@ -19,6 +19,7 @@ export function criarHud({ doc, raiz, i18n, painelAberto = true, aoTrocarIdioma 
   let estadoAtual = { advogados: [], estagiarios: [], salas: [], saude: {}, crachas: null, conectado: false };
   let foraDoMapa = new Set();
   let selecionado = null;
+  let rolagemDoPainel = 0;
 
   const barra = el(doc, 'header', 'barra');
   const titulo = el(doc, 'h1', 'titulo', lingua.t('titulo'));
@@ -126,23 +127,22 @@ export function criarHud({ doc, raiz, i18n, painelAberto = true, aoTrocarIdioma 
    */
   function desenharPainel() {
     const focoId = doc.activeElement?.dataset?.id;
-    const rolagem = painel.scrollTop; // replaceChildren zera a rolagem do painel: guardada aqui, devolvida no fim
+    // uma lista vazia/"sem conexão" não deve zerar a rolagem guardada
+    if (painel.scrollHeight > painel.clientHeight) rolagemDoPainel = painel.scrollTop;
     lista.replaceChildren();
     if (!estadoAtual.conectado) {
       lista.append(el(doc, 'p', 'vazio', lingua.t('semConexao')));
-      return;
-    }
-    if (!estadoAtual.advogados.length) {
+    } else if (!estadoAtual.advogados.length) {
       lista.append(el(doc, 'p', 'vazio', lingua.t('semAdvogados')));
-      return;
+    } else {
+      for (const grupo of agruparPorProjeto(estadoAtual.advogados)) {
+        const bloco = el(doc, 'section', 'projeto');
+        bloco.append(el(doc, 'h3', null, grupo.rotulo || lingua.t('semProjeto')));
+        for (const advogado of grupo.advogados) bloco.append(linhaDoAdvogado(advogado));
+        lista.append(bloco);
+      }
     }
-    for (const grupo of agruparPorProjeto(estadoAtual.advogados)) {
-      const bloco = el(doc, 'section', 'projeto');
-      bloco.append(el(doc, 'h3', null, grupo.rotulo || lingua.t('semProjeto')));
-      for (const advogado of grupo.advogados) bloco.append(linhaDoAdvogado(advogado));
-      lista.append(bloco);
-    }
-    painel.scrollTop = rolagem;
+    painel.scrollTop = rolagemDoPainel;
     if (focoId) lista.querySelector('[data-id="' + CSS.escape(focoId) + '"]')?.focus();
   }
 

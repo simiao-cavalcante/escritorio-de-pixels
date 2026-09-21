@@ -71,7 +71,7 @@ export function criarElenco({ agora = () => Date.now(), reduzirMovimento = false
    * `sala === null` e nunca disputa o tile.
    */
   function vagaEmPe(ator, sala) {
-    let p = posicaoJuntoAPorta(sala, 0);
+    let p;
     for (let k = 0; k < LIMITE_EM_PE; k += 1) {
       p = posicaoJuntoAPorta(sala, k);
       if (!tileEmPeOcupado(ator, sala, p)) break;
