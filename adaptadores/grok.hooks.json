@@ -66,6 +66,17 @@
         ]
       }
     ],
+    "PermissionDenied": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:7777/hook/grok",
+            "timeout": 2
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "hooks": [

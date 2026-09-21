@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, renameSync, mkdirSync, existsSync, copyFileSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, mkdirSync, existsSync, copyFileSync, unlinkSync, statSync, chmodSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { urlHook, comandoCurl, lerConfig, gravarConfig } from './config.js';
@@ -9,7 +9,7 @@ const MARCA = '/hook/';
 export const EVENTOS_POR_CLI = Object.freeze({
   claude: ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'SubagentStart', 'SubagentStop', 'PermissionRequest', 'Notification', 'Stop', 'SessionEnd'],
   codex: ['SessionStart', 'SessionEnd', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'PermissionRequest', 'SubagentStart', 'SubagentStop', 'Stop', 'Interrupt'],
-  grok: ['SessionStart', 'SessionEnd', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'Notification', 'SubagentStart', 'SubagentStop', 'Stop', 'StopFailure', 'StopCancelled'],
+  grok: ['SessionStart', 'SessionEnd', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionDenied', 'Notification', 'SubagentStart', 'SubagentStop', 'Stop', 'StopFailure', 'StopCancelled'],
   cursor: ['sessionStart', 'sessionEnd', 'beforeSubmitPrompt', 'preToolUse', 'postToolUse', 'postToolUseFailure', 'subagentStart', 'subagentStop', 'stop'],
   gemini: ['SessionStart', 'SessionEnd', 'BeforeAgent', 'AfterAgent', 'BeforeTool', 'AfterTool', 'AfterModel', 'Notification'],
 });
@@ -39,12 +39,18 @@ function entrada(cli, porta) {
   }
 }
 
+// só reconhecemos como nosso um hook cuja url/command aponte para o /hook/ local (127.0.0.1 ou
+// localhost); um hook de terceiro que por acaso tenha "/hook/" numa URL externa não é apagado.
+const LOCAL = /127\.0\.0\.1|localhost/;
+
 export function ehNosso(h) {
   if (!h || typeof h !== 'object') return false;
-  return (typeof h.url === 'string' && h.url.includes(MARCA)) || (typeof h.command === 'string' && h.command.includes(MARCA));
+  const local = (s) => typeof s === 'string' && s.includes(MARCA) && LOCAL.test(s);
+  return local(h.url) || local(h.command);
 }
 
 const objeto = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? x : {});
+const ehObjetoSimples = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
 
 function semNossosGrupos(grupos) {
   return grupos
@@ -55,10 +61,13 @@ function semNossosGrupos(grupos) {
 export function mesclar(cli, atual, porta) {
   exigirCli(cli);
   const cfg = structuredClone(objeto(atual));
+  if (cfg.hooks !== undefined && !ehObjetoSimples(cfg.hooks)) {
+    throw new Error('hooks não é um objeto; nada foi alterado');
+  }
   const nossa = entrada(cli, porta);
+  if (cli === 'cursor') cfg.version ??= 1; // antes de "hooks" para a amostra sair { version, hooks }
   cfg.hooks = objeto(cfg.hooks);
   if (cli === 'cursor') {
-    cfg.version ??= 1;
     for (const ev of EVENTOS_POR_CLI.cursor) {
       const lista = Array.isArray(cfg.hooks[ev]) ? cfg.hooks[ev].filter((h) => !ehNosso(h)) : [];
       lista.push(nossa);
@@ -77,7 +86,10 @@ export function mesclar(cli, atual, porta) {
 export function remover(cli, atual) {
   exigirCli(cli);
   const cfg = structuredClone(objeto(atual));
-  if (!cfg.hooks || typeof cfg.hooks !== 'object') return cfg;
+  if (cfg.hooks === undefined) return cfg;
+  if (!ehObjetoSimples(cfg.hooks)) {
+    throw new Error('hooks não é um objeto; nada foi alterado');
+  }
   for (const ev of Object.keys(cfg.hooks)) {
     const lista = cfg.hooks[ev];
     if (!Array.isArray(lista)) continue;
@@ -105,12 +117,17 @@ function lerJson(arquivo) {
 function gravarAtomico(arquivo, json, existe, agora) {
   mkdirSync(dirname(arquivo), { recursive: true });
   let backup;
+  // preserva o modo do arquivo existente (ex.: settings.json real em 0600); sem isso o
+  // temporário sai com a umask padrão (0644) e o renameSync rebaixa a permissão do alvo.
+  const modo = existe ? statSync(arquivo).mode & 0o777 : undefined;
   if (existe) {
     backup = `${arquivo}.bak-${carimbo(agora)}`;
     copyFileSync(arquivo, backup);
+    chmodSync(backup, modo);
   }
   const tmp = `${arquivo}.tmp-${process.pid}`;
-  writeFileSync(tmp, `${JSON.stringify(json, null, 2)}\n`);
+  writeFileSync(tmp, `${JSON.stringify(json, null, 2)}\n`, modo !== undefined ? { mode: modo } : undefined);
+  if (modo !== undefined) chmodSync(tmp, modo); // vence a umask, writeFileSync sozinho não garante
   renameSync(tmp, arquivo);
   return backup;
 }
