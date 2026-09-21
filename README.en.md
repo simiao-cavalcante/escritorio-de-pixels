@@ -38,7 +38,7 @@ how** (desk inside the room, path, animation).
 Requires Node.js >= 20. There is no `npm install`: there are no dependencies.
 
 ```bash
-git clone https://github.com/simiaocavalcanteia-arch/escritorio-de-pixels.git
+git clone https://github.com/simiao-cavalcante/escritorio-de-pixels.git
 cd escritorio-de-pixels
 node server.mjs
 ```

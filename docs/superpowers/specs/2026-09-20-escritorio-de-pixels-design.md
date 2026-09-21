@@ -416,7 +416,7 @@ Ordem de execução do plano: (1) fixtures reais dos payloads de Claude, Codex, 
 ## 15. Publicação
 
 - Repositório git local com commits atômicos na `main`.
-- `gh repo create simiaocavalcanteia-arch/escritorio-de-pixels --public` e push.
+- `gh repo create simiao-cavalcante/escritorio-de-pixels --public` e push.
 - README pt-BR com GIF da demo, instalação (`git clone` e `node server.mjs`, ou `npx` quando publicado), instalação de hooks por CLI, protocolo, adaptadores, créditos (Age of Agents como inspiração; gpt-image-2.5 na arte) e licença. `README.en.md` equivalente.
 - `package.json` com `bin`, `files`, `engines >= 20`; publicação no npm como passo opcional posterior.
 - Topics: `claude-code`, `codex`, `pixel-art`, `ai-agents`, `visualization`, `legal-tech`, `pt-br`.

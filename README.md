@@ -39,7 +39,7 @@ como** (posto na sala, trajeto, animação).
 Requer Node.js >= 20. Não há `npm install`: não há dependências.
 
 ```bash
-git clone https://github.com/simiaocavalcanteia-arch/escritorio-de-pixels.git
+git clone https://github.com/simiao-cavalcante/escritorio-de-pixels.git
 cd escritorio-de-pixels
 node server.mjs
 ```
