@@ -33,11 +33,23 @@ function responder(res, status, json) {
   res.end(JSON.stringify(json));
 }
 
-/** Lê o corpo até `max` bytes. Acima disso continua drenando e devolve { erro: 413 } para poder responder. */
+/**
+ * Lê o corpo até `max` bytes. Acima disso continua drenando e devolve { erro: 413 } para poder
+ * responder; se o content-length já declarado exceder o limite, resolve 413 de imediato (sem
+ * esperar o upload inteiro); se a requisição fechar no meio do envio, resolve { erro: 400 } em
+ * vez de ficar pendente para sempre.
+ */
 function lerCorpo(req, max) {
   return new Promise((resolve) => {
+    let resolvido = false;
+    const concluir = (valor) => {
+      if (resolvido) return;
+      resolvido = true;
+      resolve(valor);
+    };
     const declarado = Number(req.headers['content-length']);
     let estourou = Number.isFinite(declarado) && declarado > max;
+    if (estourou) concluir({ erro: 413 });
     const partes = [];
     let total = 0;
     req.on('data', (c) => {
@@ -50,8 +62,9 @@ function lerCorpo(req, max) {
         partes.push(c);
       }
     });
-    req.on('end', () => resolve(estourou ? { erro: 413 } : { texto: Buffer.concat(partes).toString('utf8') }));
-    req.on('error', () => resolve({ erro: 400 }));
+    req.on('end', () => concluir(estourou ? { erro: 413 } : { texto: Buffer.concat(partes).toString('utf8') }));
+    req.on('error', () => concluir({ erro: 400 }));
+    req.on('close', () => concluir({ erro: 400 }));
   });
 }
 
@@ -61,7 +74,7 @@ function limparCli(nome) {
 
 export function criarAplicacao({
   porta = 7777, home = homedir(), raiz = RAIZ_PADRAO, agora = () => Date.now(),
-  demo = false, semTranscritos = false, ocultarPrompts = false, log = () => {}, watch = true,
+  demo = false, semTranscritos = false, ocultarPrompts = false, log = () => {}, watch = true, tiqueMs = 1000,
 } = {}) {
   const salas = carregarSalas(join(raiz, 'salas.json'), { aoErro: log, watch });
   const cargos = carregarCargos(join(raiz, 'cargos.json'), { aoErro: log });
@@ -79,12 +92,15 @@ export function criarAplicacao({
     gemini: criarTradutorGemini({ agora }),
   };
   const genericos = new Map();
-  const saude = {};
+  // Sem protótipo: nomes de CLI vêm do usuário (rota /hook/<cli>) e não podem poluir Object.prototype
+  // nem herdar chaves como __proto__/constructor/toString.
+  const saude = Object.create(null);
   const saudeDe = (cli) => (saude[cli] ??= { ultimoEvento: null, eventos: 0, ignorados: 0, invalidos: 0, rejeitadosPorTamanho: 0 });
   const dirPublico = join(raiz, 'public');
   let hostsOk = new Set();
   let origensOk = new Set();
   let timerTique;
+  let saudeSuja = false;
 
   function snapshot() {
     return {
@@ -113,6 +129,7 @@ export function criarAplicacao({
     const { eventos, rejeitados } = normalizarLote(lista, agora);
     const s = saudeDe(origem);
     s.invalidos += rejeitados.length;
+    saudeSuja = true;
     let aceitos = 0;
     for (const ev of eventos) {
       if (!inedito(ev)) continue;
@@ -126,7 +143,11 @@ export function criarAplicacao({
 
   function traduzir(cliRota, payload) {
     if (detectarEnvelope(payload) === 'grok') return { cli: 'grok', eventos: tradutores.grok(payload) };
-    if (tradutores[cliRota]) return { cli: cliRota, eventos: tradutores[cliRota](payload) };
+    // Object.hasOwn (não `tradutores[cliRota]`): cliRota vem do usuário e um objeto literal
+    // responde truthy para __proto__ (Object.prototype) e constructor (Object), o que tratava
+    // essas rotas como tradutor conhecido e explodia (Object.prototype não é função) ou chamava
+    // Object(payload) por engano.
+    if (Object.hasOwn(tradutores, cliRota)) return { cli: cliRota, eventos: tradutores[cliRota](payload) };
     let t = genericos.get(cliRota);
     if (!t) {
       t = criarTradutorClaude({ agora, cli: cliRota, semTranscritos: true });
@@ -157,14 +178,14 @@ export function criarAplicacao({
 
     if (req.method === 'GET') {
       if (url.pathname === '/fluxo') return fluxo.conectar(req, res, snapshot());
-      if (url.pathname === '/estado') return responder(res, 200, snapshot());
+      if (url.pathname === '/estado') return responder(res, 200, { seq: fluxo.seq, ...snapshot() });
       if (url.pathname === '/saude') return responder(res, 200, saude);
       return servirEstatico(url.pathname, res);
     }
 
     if (req.method === 'POST') {
-      if (demo) return responder(res, 503, { erro: 'modo demo não aceita eventos externos' });
       if (url.pathname === '/eventos') {
+        if (demo) return responder(res, 503, { erro: 'modo demo não aceita eventos externos' });
         const corpo = await lerCorpo(req, LIMITES.corpoEventos);
         if (corpo.erro) {
           if (corpo.erro === 413) saudeDe('eventos').rejeitadosPorTamanho += 1;
@@ -180,6 +201,7 @@ export function criarAplicacao({
       }
       const m = url.pathname.match(/^\/hook\/([a-z0-9_-]{1,32})$/);
       if (m) {
+        if (demo) return responder(res, 503, { erro: 'modo demo não aceita eventos externos' });
         const cliRota = m[1] === 'generico' ? limparCli(url.searchParams.get('cli')) : m[1];
         const corpo = await lerCorpo(req, LIMITES.corpoHook);
         if (corpo.erro) {
@@ -220,7 +242,13 @@ export function criarAplicacao({
         const real = servidor.address().port;
         hostsOk = new Set([`127.0.0.1:${real}`, `localhost:${real}`, `[::1]:${real}`]);
         origensOk = new Set([...hostsOk].map((h) => `http://${h}`));
-        timerTique = setInterval(() => transmitirMudancas(escritorio.tique()), 1000);
+        timerTique = setInterval(() => {
+          transmitirMudancas(escritorio.tique());
+          if (saudeSuja) {
+            fluxo.transmitir('saude', { saude });
+            saudeSuja = false;
+          }
+        }, tiqueMs);
         timerTique.unref();
         resolve(real);
       });

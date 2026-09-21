@@ -46,7 +46,10 @@ test('POST /eventos aplica e GET /estado reflete; Host estranho recebe 421; Orig
     assert.equal((await fetch(url('/estado'), { headers: { origin: 'https://evil.com' } })).status, 403);
     assert.equal((await fetch(url('/estado'), { headers: { origin: `http://localhost:${porta}` } })).status, 200);
     assert.equal((await fetch(url('/nada'))).status, 404);
-    assert.equal((await fetch(url('/../package.json'))).status, 404);
+    // fetch() normaliza `/../package.json` para `/package.json` antes de enviar, então nunca
+    // exercitava a travessia de verdade; `bruto` manda os bytes crus no path da requisição.
+    assert.equal((await bruto({ porta, caminho: '/../package.json', headers: { host: `127.0.0.1:${porta}` } })).status, 404);
+    assert.equal((await bruto({ porta, caminho: '/%2e%2e/package.json', headers: { host: `127.0.0.1:${porta}` } })).status, 404);
   } finally {
     await app.fechar();
   }
@@ -141,5 +144,70 @@ test('modo demo recusa eventos externos com 503 e --ocultar-prompts esconde o te
     assert.equal(oculto.app.snapshot().advogados[0].caso, 'Caso em andamento (25 caracteres)');
   } finally {
     await oculto.app.fechar();
+  }
+});
+
+test('nomes de CLI hostis (__proto__, constructor) não poluem Object.prototype nem derrubam o servidor', async () => {
+  const { app, url } = await subir();
+  try {
+    const payload = { hook_event_name: 'UserPromptSubmit', session_id: 'p1', prompt: 'oi' };
+    const post = (rota) => fetch(url(rota), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+    assert.equal((await post('/hook/__proto__')).status, 204);
+    assert.equal((await post('/hook/constructor')).status, 204);
+    assert.equal((await post('/hook/generico?cli=__proto__')).status, 204);
+    // O bug gravava `invalidos = NaN` direto em Object.prototype: qualquer objeto literal do
+    // processo passava a "herdar" isso. Um objeto novo, sem relação com o servidor, prova que
+    // o protótipo global ficou intacto.
+    assert.equal(({}).invalidos, undefined);
+    const saude = await (await fetch(url('/saude'))).json();
+    for (const chave of Object.keys(saude)) {
+      assert.equal(Number.isNaN(saude[chave].invalidos), false, `${chave}.invalidos não pode ser NaN`);
+    }
+  } finally {
+    await app.fechar();
+  }
+});
+
+test('tique com saúde suja emite delta saude no SSE, com seq maior que o do snapshot', async () => {
+  const { app, porta } = await subir({ tiqueMs: 20 });
+  try {
+    const res = await new Promise((resolve, reject) => {
+      const req = request({ host: '127.0.0.1', port: porta, method: 'GET', path: '/fluxo', headers: { host: `127.0.0.1:${porta}` } });
+      req.on('response', resolve);
+      req.on('error', reject);
+      req.end();
+    });
+    let buffer = '';
+    function proximo(tipo) {
+      return new Promise((resolve) => {
+        function tentar() {
+          const i = buffer.indexOf(`event: ${tipo}\n`);
+          if (i < 0) return false;
+          const fim = buffer.indexOf('\n\n', i);
+          if (fim < 0) return false;
+          const bloco = buffer.slice(i, fim);
+          buffer = buffer.slice(fim + 2);
+          res.off('data', onData);
+          resolve(JSON.parse(bloco.split('\ndata: ')[1]));
+          return true;
+        }
+        function onData(chunk) {
+          buffer += chunk.toString('utf8');
+          tentar();
+        }
+        if (!tentar()) res.on('data', onData);
+      });
+    }
+    const snap = await proximo('snapshot');
+    await bruto({
+      porta, metodo: 'POST', caminho: '/eventos',
+      headers: { host: `127.0.0.1:${porta}`, 'content-type': 'application/json' },
+      corpo: JSON.stringify(ev({ tipo: 'prompt', prompt: 'oi' })),
+    });
+    const delta = await proximo('saude');
+    assert.ok(delta.seq > snap.seq, `esperava seq(saude)=${delta.seq} > seq(snapshot)=${snap.seq}`);
+    res.destroy();
+  } finally {
+    await app.fechar();
   }
 });
