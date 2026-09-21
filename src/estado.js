@@ -36,6 +36,11 @@ export class Escritorio {
     const mudancas = [];
     const id = `${ev.cli}:${ev.sessao}`;
     const agora = this.agora();
+    const lapide = this.lapides.get(id);
+    if (lapide !== undefined) {
+      if (lapide > agora && ev.tipo !== 'sessao.inicio' && ev.tipo !== 'prompt') return mudancas;
+      this.lapides.delete(id);
+    }
     let adv = this.advogados.get(id);
     if (!adv) adv = this._criarAdvogado(id, ev, agora, mudancas);
     this._atualizarMetadados(adv, ev);
@@ -111,9 +116,54 @@ export class Escritorio {
     };
   }
 
+  // Chamado a cada segundo pelo servidor: aplica expirações por tempo (ocioso,
+  // desatualizado, saída, estagiário órfão) e efetiva remoções após a lápide.
+  tique() {
+    const mudancas = [];
+    const agora = this.agora();
+    const L = this.limites;
+    for (const adv of [...this.advogados.values()]) {
+      if (adv.estado === 'saiu') {
+        if (agora - adv.saiuEm >= L.removerMs) this._remover(adv, agora, mudancas);
+        continue;
+      }
+      const semProprios = agora - adv.ultimaAtividade;
+      const semTudo = agora - Math.max(adv.ultimaAtividade, adv.ultimaAtividadeAgregada);
+      let mudou = false;
+      const limiteSaida = adv.estado === 'aguardando' ? L.saidaAguardandoMs : L.saidaMs;
+      if (semTudo >= limiteSaida) {
+        this._sair(adv, agora, mudancas);
+        mudou = true;
+      } else if ((adv.estado === 'pensando' || adv.estado === 'recepcao') && semTudo >= L.ociosoMs) {
+        this._mudar(adv, 'ocioso', 'recepcao');
+        mudou = true;
+      } else if (adv.estado === 'trabalhando' && !adv.desatualizado && semProprios >= L.desatualizadoMs) {
+        adv.desatualizado = true;
+        mudou = true;
+      }
+      for (const eid of [...adv.estagiarios]) {
+        const est = this.estagiarios.get(eid);
+        if (est && agora - est.ultimaAtividade >= L.estagiarioMs) {
+          this._removerEstagiario(adv, eid, mudancas);
+          mudou = true;
+        }
+      }
+      if (mudou) mudancas.push(this._deltaAdvogado(adv));
+    }
+    for (const [id, ate] of this.lapides) if (ate <= agora) this.lapides.delete(id);
+    return mudancas;
+  }
+
   // ---------- advogado ----------
 
-  _criarAdvogado(id, ev, agora) {
+  _criarAdvogado(id, ev, agora, mudancas) {
+    if (this.advogados.size >= this.limites.sessoes) {
+      const vivos = [...this.advogados.values()].filter((a) => a.estado !== 'saiu');
+      const ociosos = vivos.filter((a) => a.estado === 'ocioso');
+      const pool = ociosos.length ? ociosos : vivos;
+      const vitima = pool.sort((a, b) => a.ultimaAtividadeAgregada - b.ultimaAtividadeAgregada)[0];
+      if (vitima) this._remover(vitima, agora, mudancas);
+    }
     const adv = {
       id, cli: ev.cli, sessao: ev.sessao, modelo: undefined, cargo: this.cargoDoModelo(undefined),
       cwd: undefined, projetoId: undefined, projeto: undefined,
@@ -149,6 +199,15 @@ export class Escritorio {
     adv.estado = 'saiu';
     adv.saiuEm = agora;
     this._limparChamadas(adv, mudancas);
+  }
+
+  // Remove o advogado do snapshot e deixa uma lápide: identidade bloqueada por
+  // `lapideMs`, exceto para sessao.inicio e prompt (ver checagem em `aplicar`).
+  _remover(adv, agora, mudancas) {
+    for (const eid of [...adv.estagiarios]) this._removerEstagiario(adv, eid, mudancas);
+    this.advogados.delete(adv.id);
+    this.lapides.set(adv.id, agora + this.limites.lapideMs);
+    mudancas.push({ tipo: 'remover', entidade: 'advogado', id: adv.id });
   }
 
   _salaAoVoltar(adv) {
