@@ -54,12 +54,12 @@ export class Escritorio {
         break;
       case 'ferramenta.inicio':
         this._abrirChamada(adv, ev.ferramenta, this.limites.pendentesAdvogado);
-        this._registrarAcao(adv, ev);
+        this._registrarAcao(adv, ev, agora);
         this._mudar(adv, 'trabalhando', this.resolverSala(ev.ferramenta));
         break;
       case 'ferramenta.fim': {
-        if (adv.estado !== 'trabalhando') break;
-        this._fecharChamada(adv, ev.ferramenta);
+        const fechou = this._fecharChamada(adv, ev.ferramenta);
+        if (!fechou || adv.estado !== 'trabalhando') break;
         const atual = this._ultimaChamada(adv);
         if (atual) adv.sala = this.resolverSala(atual);
         else this._mudar(adv, 'pensando', adv.sala);
@@ -138,8 +138,8 @@ export class Escritorio {
     return adv.estado === 'aguardando' ? (adv.salaAnterior ?? 'recepcao') : adv.sala;
   }
 
-  _registrarAcao(adv, ev) {
-    adv.acoesRecentes.unshift({ nome: ev.ferramenta.nome, detalhe: ev.ferramenta.detalhe, ts: ev.ts });
+  _registrarAcao(adv, ev, agora) {
+    adv.acoesRecentes.unshift({ nome: ev.ferramenta.nome, detalhe: ev.ferramenta.detalhe, ts: agora });
     if (adv.acoesRecentes.length > this.limites.acoesRecentes) adv.acoesRecentes.length = this.limites.acoesRecentes;
   }
 
@@ -147,18 +147,21 @@ export class Escritorio {
 
   _abrirChamada(ent, f, max) {
     const chave = f.id ?? `${f.nome}#${++this.contadorChamadas}`;
-    if (ent.chamadasPendentes.size >= max) ent.chamadasPendentes.delete(ent.chamadasPendentes.keys().next().value);
     ent.chamadasPendentes.delete(chave);
+    if (ent.chamadasPendentes.size >= max) ent.chamadasPendentes.delete(ent.chamadasPendentes.keys().next().value);
     ent.chamadasPendentes.set(chave, { nome: f.nome, detalhe: f.detalhe });
   }
 
+  // Chave é ferramenta.id; sem id, a chave sintética é `nome#n`. Um `fim` com id
+  // desconhecido só pode encerrar pendentes sintéticas homônimas (abertas sem id) —
+  // nunca outra pendente com id diferente. `fim` sem correspondente é ignorado.
   _fecharChamada(ent, f) {
     if (f.id && ent.chamadasPendentes.delete(f.id)) return true;
     for (const [k, v] of ent.chamadasPendentes) {
-      if (v.nome === f.nome) {
-        ent.chamadasPendentes.delete(k);
-        return true;
-      }
+      if (v.nome !== f.nome) continue;
+      if (f.id && !k.startsWith(`${f.nome}#`)) continue;
+      ent.chamadasPendentes.delete(k);
+      return true;
     }
     return false;
   }

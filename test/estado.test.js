@@ -122,3 +122,39 @@ test('identidade separa CLIs e projetos com o mesmo nome guardam o cwd completo'
   assert.deepEqual(s.advogados.map((a) => a.projetoId).sort(), ['/a/x', '/b/x']);
   assert.deepEqual(s.advogados.map((a) => a.projeto), ['x', 'x']);
 });
+
+test('fim durante aguardando fecha a pendente sem mudar de estado; a pendente antiga não vaza para o próximo ciclo', () => {
+  const esc = novo();
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Bash', id: 'a' } }));
+  esc.aplicar(ev('aguardando', { motivo: 'permissao' }));
+  esc.aplicar(ev('ferramenta.fim', { ferramenta: { nome: 'Bash', id: 'a' } }));
+  assert.equal(adv(esc).estado, 'aguardando');
+  assert.equal(adv(esc).atividade, null);
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', id: 'b' } }));
+  esc.aplicar(ev('ferramenta.fim', { ferramenta: { nome: 'Read', id: 'b' } }));
+  assert.equal(adv(esc).estado, 'pensando');
+});
+
+test('fim com id desconhecido só fecha pendente sintética homônima, nunca uma com id diferente', () => {
+  const esc = novo();
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', id: 'a', detalhe: 'primeiro' } }));
+  esc.aplicar(ev('ferramenta.fim', { ferramenta: { nome: 'Read', id: 'x' } }));
+  assert.equal(adv(esc).estado, 'trabalhando');
+  assert.equal(adv(esc).atividade.nome, 'Read');
+  assert.equal(adv(esc).atividade.detalhe, 'primeiro');
+
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', detalhe: 'segundo' } }));
+  esc.aplicar(ev('ferramenta.fim', { ferramenta: { nome: 'Read', id: 'x' } }));
+  assert.equal(adv(esc).estado, 'trabalhando');
+  assert.equal(adv(esc).atividade.detalhe, 'primeiro');
+});
+
+test('acoesRecentes guarda ts em ms do relógio injetado, não a string ISO do evento', () => {
+  const esc = novo();
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', detalhe: 'a.md' } }));
+  assert.equal(adv(esc).acoesRecentes[0].ts, 1_000_000);
+  assert.equal(typeof adv(esc).acoesRecentes[0].ts, 'number');
+  esc.avancar(500);
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Edit', detalhe: 'b.md' } }));
+  assert.equal(adv(esc).acoesRecentes[0].ts, 1_000_500);
+});
