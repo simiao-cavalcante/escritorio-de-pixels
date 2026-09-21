@@ -32,4 +32,12 @@ export const CORES = Object.freeze({
   fundo: '#17150f',
   texto: '#e8e2d2',
   balao: '#26241c',
+  // Overlays e tintas do render: sem token de cor próprio, só ajuste sobre o que já existe.
+  quadriculado: 'rgba(255,255,255,0.03)',
+  contornoMovel: 'rgba(0,0,0,0.5)',
+  sombra: 'rgba(0,0,0,0.25)',
+  crachaTexto: '#ffffff',
+  contornoBalao: 'rgba(255,255,255,0.25)',
+  rotuloProjeto: 'rgba(232,226,210,0.75)',
+  digitacao: 'rgba(232,226,210,0.55)',
 });

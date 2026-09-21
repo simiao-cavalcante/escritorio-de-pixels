@@ -24,7 +24,7 @@ function desenharPisos(ctx, sprites) {
       ctx.fillStyle = CORES.piso[id] ?? CORES.piso['piso-madeira'];
       ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
       if (id !== 'piso-parede' && (x + y) % 2 === 0) {
-        ctx.fillStyle = 'rgba(255,255,255,0.03)'; // quadriculado sutil
+        ctx.fillStyle = CORES.quadriculado; // quadriculado sutil
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
       }
     }
@@ -34,12 +34,15 @@ function desenharPisos(ctx, sprites) {
 function desenharMovel(ctx, sprites, movel, sala) {
   const quadro = sprites.quadro(movel.sprite);
   if (quadro) {
-    ctx.drawImage(quadro.imagem, movel.x * TILE, (movel.y + 1) * TILE - quadro.h, quadro.w, quadro.h);
+    // Ancorado pelo centro da base: bate com a âncora do quadro no centro-base da tile.
+    const x = (movel.x + 0.5) * TILE - quadro.ancora.x;
+    const y = (movel.y + 1) * TILE - quadro.ancora.y;
+    ctx.drawImage(quadro.imagem, x, y, quadro.w, quadro.h);
     return;
   }
   ctx.fillStyle = CORES.sala[sala] ?? CORES.crachaPadrao;
   ctx.fillRect(movel.x * TILE + 4, movel.y * TILE + 8, TILE - 8, TILE - 12);
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.strokeStyle = CORES.contornoMovel;
   ctx.strokeRect(movel.x * TILE + 4, movel.y * TILE + 8, TILE - 8, TILE - 12);
 }
 
@@ -67,7 +70,7 @@ function desenharPlaceholderPersonagem(ctx, ator, escala) {
   ctx.beginPath();
   ctx.arc(0, -a + a * 0.25, l * 0.22, 0, Math.PI * 2); // cabeça
   ctx.fill();
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillStyle = CORES.sombra;
   ctx.fillRect(-l / 2, -2, l, 3); // sombra
 }
 
@@ -76,7 +79,7 @@ function desenharCracha(ctx, ator, cena, escala) {
   const a = ALTURA_PERSONAGEM * escala;
   ctx.fillStyle = cracha.cor;
   ctx.fillRect(-6, -a + a * 0.45, 12, 8);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = CORES.crachaTexto;
   ctx.font = '7px monospace';
   ctx.textAlign = 'center';
   ctx.fillText(cracha.sigla, 0, -a + a * 0.45 + 6);
@@ -88,7 +91,7 @@ function desenharBalao(ctx, texto, cima) {
   const largura = Math.max(24, texto.length * 5.4 + 10);
   ctx.fillStyle = CORES.balao;
   ctx.fillRect(-largura / 2, cima - 13, largura, 13);
-  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.strokeStyle = CORES.contornoBalao;
   ctx.lineWidth = 1;
   ctx.strokeRect(-largura / 2, cima - 13, largura, 13);
   ctx.fillStyle = CORES.texto;
@@ -120,7 +123,7 @@ function desenharAtor(ctx, ator, cena) {
   const entidade = ator.entidade ?? {};
   const alturaTopo = -ALTURA_PERSONAGEM * escala;
   if (ator.tipo === 'advogado' && entidade.projeto) {
-    ctx.fillStyle = 'rgba(232,226,210,0.75)';
+    ctx.fillStyle = CORES.rotuloProjeto;
     ctx.font = '8px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(truncar(entidade.projeto, 14), 0, 10);
@@ -142,7 +145,7 @@ function desenharAtor(ctx, ator, cena) {
   if (entidade.estado === 'trabalhando' && ator.alvo?.movel) {
     const piscando = cena.reduzirMovimento || Math.floor(cena.tempo / 400) % 2 === 0;
     if (piscando) {
-      ctx.fillStyle = 'rgba(232,226,210,0.55)';
+      ctx.fillStyle = CORES.digitacao;
       ctx.fillRect(ator.alvo.movel.x * TILE + 10, ator.alvo.movel.y * TILE + 10, 12, 8);
     }
   }

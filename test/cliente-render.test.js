@@ -3,24 +3,43 @@ import assert from 'node:assert/strict';
 import { desenharCena, atorEm, LARGURA_PERSONAGEM, ALTURA_PERSONAGEM } from '../public/render.js';
 import { criarElenco } from '../public/personagens.js';
 import { criarI18n } from '../public/i18n.js';
+import { CORES } from '../public/cores.js';
 import { TILE, LARGURA, ALTURA, SALAS } from '../public/mundo.js';
 
 /** Contexto 2D falso: registra as chamadas para o teste de fumaça. */
 function contextoFalso() {
   const chamadas = [];
+  const estilos = [];
+  let fillStyleAtual = '';
+  let strokeStyleAtual = '';
   const alvo = {
     chamadas,
+    estilos,
     canvas: { width: LARGURA, height: ALTURA },
-    fillStyle: '', strokeStyle: '', font: '', textAlign: '', lineWidth: 1,
+    font: '', textAlign: '', lineWidth: 1,
     textos: () => chamadas.filter((c) => c.nome === 'fillText').map((c) => c.args[0]),
     quantas: (nome) => chamadas.filter((c) => c.nome === nome).length,
   };
+  Object.defineProperty(alvo, 'fillStyle', {
+    get: () => fillStyleAtual,
+    set: (valor) => { fillStyleAtual = valor; estilos.push(valor); },
+  });
+  Object.defineProperty(alvo, 'strokeStyle', {
+    get: () => strokeStyleAtual,
+    set: (valor) => { strokeStyleAtual = valor; estilos.push(valor); },
+  });
   for (const nome of ['clearRect', 'fillRect', 'strokeRect', 'drawImage', 'fillText', 'beginPath', 'arc', 'fill', 'stroke', 'save', 'restore', 'translate', 'scale', 'moveTo', 'lineTo', 'closePath']) {
     alvo[nome] = (...args) => {
       chamadas.push({ nome, args });
     };
   }
   return alvo;
+}
+
+/** Achata CORES recursivamente (Object.values, descendo em objetos aninhados). */
+function todasAsCores(valor) {
+  if (valor && typeof valor === 'object') return Object.values(valor).flatMap(todasAsCores);
+  return [valor];
 }
 
 const spritesVazio = { quadro: () => null, temAtlas: false };
@@ -121,10 +140,53 @@ test('estagiário aparece menor e o desenho não quebra sem projeto nem atividad
 test('com movimento reduzido não há balanço: as posições de desenho são inteiras', () => {
   const ctx = contextoFalso();
   const { cena } = cenaCom({ advogados: [advogado()], estagiarios: [] }, { reduzirMovimento: true });
+  for (const ator of cena.atores) {
+    ator.fase = 50; // não múltiplo de π·90: sin(fase) seria não-nulo sem o guard
+    ator.andando = true;
+  }
   desenharCena(ctx, cena);
   const translates = ctx.chamadas.filter((c) => c.nome === 'translate');
   assert.ok(translates.length >= 2);
   for (const t of translates) assert.ok(Number.isInteger(t.args[1]), `translate em y não inteiro: ${t.args[1]}`);
+
+  // Controle: mesma fase e mesmo andando, mas sem reduzirMovimento — o balanço deve aparecer.
+  const ctxControle = contextoFalso();
+  const { cena: cenaControle } = cenaCom({ advogados: [advogado()], estagiarios: [] }, { reduzirMovimento: false });
+  for (const ator of cenaControle.atores) {
+    ator.fase = 50;
+    ator.andando = true;
+  }
+  desenharCena(ctxControle, cenaControle);
+  const translatesControle = ctxControle.chamadas.filter((c) => c.nome === 'translate');
+  assert.ok(
+    translatesControle.some((t) => !Number.isInteger(t.args[1])),
+    'sem reduzirMovimento deveria haver balanço (posição fracionária)',
+  );
+});
+
+test('toda cor que o render usa vem de CORES', () => {
+  const ctx = contextoFalso();
+  // cli sem crachá cadastrado: cai no `padrao` do fixture, que replica CORES.crachaPadrao —
+  // a cor de marca por CLI (ex.: '#c2603e' do claude) é dado de fora de render.js, não literal dele.
+  const { cena } = cenaCom({ advogados: [advogado({ cli: 'desconhecido' })], estagiarios: [] });
+  desenharCena(ctx, cena);
+  const permitidas = new Set(todasAsCores(CORES));
+  assert.ok(ctx.estilos.length > 0, 'nenhuma cor foi registrada');
+  for (const estilo of ctx.estilos) assert.ok(permitidas.has(estilo), `cor fora de CORES: ${estilo}`);
+});
+
+test('móvel mais largo que um tile é ancorado pelo centro da base', () => {
+  const ctx = contextoFalso();
+  const sprites = {
+    quadro: (id) => (id === 'movel-mesa' ? { imagem: {}, w: 64, h: 48, ancora: { x: 32, y: 48 } } : null),
+  };
+  const { cena } = cenaCom({ advogados: [], estagiarios: [] }, { sprites });
+  desenharCena(ctx, cena);
+  const esperado = [(2 + 0.5) * TILE - 32, (10 + 1) * TILE - 48, 64, 48];
+  const daBiblioteca = ctx.chamadas.filter(
+    (c) => c.nome === 'drawImage' && c.args.length === 5 && c.args.slice(1).every((v, i) => v === esperado[i]),
+  );
+  assert.equal(daBiblioteca.length, 1, 'esperava o móvel da biblioteca ancorado pelo centro da base');
 });
 
 test('atorEm acerta o retângulo do personagem e devolve null fora dele', () => {
