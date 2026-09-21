@@ -1,0 +1,326 @@
+[
+  {
+    "id": "movel-arquivo",
+    "arquivo": "movel-arquivo.png",
+    "categoria": "movel",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "3c9d0ca9cbe8"
+  },
+  {
+    "id": "movel-balcao",
+    "arquivo": "movel-balcao.png",
+    "categoria": "movel",
+    "w": 96,
+    "h": 48,
+    "ancora": {
+      "x": 48,
+      "y": 48
+    },
+    "hash": "74cae327450d"
+  },
+  {
+    "id": "movel-cadeira",
+    "arquivo": "movel-cadeira.png",
+    "categoria": "movel",
+    "w": 32,
+    "h": 32,
+    "ancora": {
+      "x": 16,
+      "y": 32
+    },
+    "hash": "61b43e68fa2b"
+  },
+  {
+    "id": "movel-cafe",
+    "arquivo": "movel-cafe.png",
+    "categoria": "movel",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "4eb967880c06"
+  },
+  {
+    "id": "movel-estante",
+    "arquivo": "movel-estante.png",
+    "categoria": "movel",
+    "w": 32,
+    "h": 64,
+    "ancora": {
+      "x": 16,
+      "y": 64
+    },
+    "hash": "2193d29b65d4"
+  },
+  {
+    "id": "movel-impressora",
+    "arquivo": "movel-impressora.png",
+    "categoria": "movel",
+    "w": 32,
+    "h": 32,
+    "ancora": {
+      "x": 16,
+      "y": 32
+    },
+    "hash": "bd0dff4a86d3"
+  },
+  {
+    "id": "movel-mesa",
+    "arquivo": "movel-mesa.png",
+    "categoria": "movel",
+    "w": 64,
+    "h": 48,
+    "ancora": {
+      "x": 32,
+      "y": 48
+    },
+    "hash": "3fb92277b411"
+  },
+  {
+    "id": "movel-mesa-reuniao",
+    "arquivo": "movel-mesa-reuniao.png",
+    "categoria": "movel",
+    "w": 96,
+    "h": 48,
+    "ancora": {
+      "x": 48,
+      "y": 48
+    },
+    "hash": "228476f67c67"
+  },
+  {
+    "id": "movel-planta",
+    "arquivo": "movel-planta.png",
+    "categoria": "movel",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "e2a77239896e"
+  },
+  {
+    "id": "movel-quadro",
+    "arquivo": "movel-quadro.png",
+    "categoria": "movel",
+    "w": 64,
+    "h": 32,
+    "ancora": {
+      "x": 32,
+      "y": 32
+    },
+    "hash": "9b06bfc6322c"
+  },
+  {
+    "id": "personagem-advogado-a",
+    "arquivo": "personagem-advogado-a.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "bfad17adc11d"
+  },
+  {
+    "id": "personagem-advogado-b",
+    "arquivo": "personagem-advogado-b.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "0d19be7ec891"
+  },
+  {
+    "id": "personagem-associado-a",
+    "arquivo": "personagem-associado-a.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "96325fb7c205"
+  },
+  {
+    "id": "personagem-associado-b",
+    "arquivo": "personagem-associado-b.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "d0e8d24132f0"
+  },
+  {
+    "id": "personagem-estagiario-a",
+    "arquivo": "personagem-estagiario-a.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "a673c8882b0e"
+  },
+  {
+    "id": "personagem-estagiario-b",
+    "arquivo": "personagem-estagiario-b.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "c431c040c993"
+  },
+  {
+    "id": "personagem-junior-a",
+    "arquivo": "personagem-junior-a.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "e6cd56f5ec7a"
+  },
+  {
+    "id": "personagem-junior-b",
+    "arquivo": "personagem-junior-b.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "2ab9d6d59ec6"
+  },
+  {
+    "id": "personagem-senior-a",
+    "arquivo": "personagem-senior-a.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "30a89746db2e"
+  },
+  {
+    "id": "personagem-senior-b",
+    "arquivo": "personagem-senior-b.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "00bbde29f010"
+  },
+  {
+    "id": "personagem-socio-a",
+    "arquivo": "personagem-socio-a.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "113baef4b0dd"
+  },
+  {
+    "id": "personagem-socio-b",
+    "arquivo": "personagem-socio-b.png",
+    "categoria": "personagem",
+    "w": 32,
+    "h": 48,
+    "ancora": {
+      "x": 16,
+      "y": 48
+    },
+    "hash": "736989ce3b59"
+  },
+  {
+    "id": "piso-carpete",
+    "arquivo": "piso-carpete.png",
+    "categoria": "piso",
+    "w": 32,
+    "h": 32,
+    "ancora": {
+      "x": 0,
+      "y": 0
+    },
+    "hash": "5417e74f6dc5"
+  },
+  {
+    "id": "piso-madeira",
+    "arquivo": "piso-madeira.png",
+    "categoria": "piso",
+    "w": 32,
+    "h": 32,
+    "ancora": {
+      "x": 0,
+      "y": 0
+    },
+    "hash": "4f31e2c4b48b"
+  },
+  {
+    "id": "piso-parede",
+    "arquivo": "piso-parede.png",
+    "categoria": "piso",
+    "w": 32,
+    "h": 32,
+    "ancora": {
+      "x": 0,
+      "y": 0
+    },
+    "hash": "c5b70645f149"
+  },
+  {
+    "id": "piso-porta",
+    "arquivo": "piso-porta.png",
+    "categoria": "piso",
+    "w": 32,
+    "h": 32,
+    "ancora": {
+      "x": 0,
+      "y": 0
+    },
+    "hash": "4561e49bab1c"
+  },
+  {
+    "id": "piso-tapete",
+    "arquivo": "piso-tapete.png",
+    "categoria": "piso",
+    "w": 32,
+    "h": 32,
+    "ancora": {
+      "x": 0,
+      "y": 0
+    },
+    "hash": "4225c0ef832d"
+  }
+]
