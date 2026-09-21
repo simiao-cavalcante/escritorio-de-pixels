@@ -36,6 +36,7 @@ ctx.imageSmoothingEnabled = false;
 const idiomaSalvo = lerPreferencia(CHAVE_IDIOMA, null);
 let i18n = criarI18n(IDIOMAS.includes(idiomaSalvo) ? idiomaSalvo : idiomaDoNavegador(navigator.languages ?? [navigator.language]));
 let painelAberto = lerPreferencia(CHAVE_PAINEL, 'aberto') === 'aberto';
+document.documentElement.lang = i18n.idioma; // leitor de tela e corretor seguem o idioma escolhido
 
 const consultaMovimento = window.matchMedia('(prefers-reduced-motion: reduce)');
 const elenco = criarElenco({ agora: () => Date.now(), reduzirMovimento: consultaMovimento.matches });
@@ -70,6 +71,7 @@ const hud = criarHud({
   painelAberto,
   aoTrocarIdioma: (novo) => {
     i18n = criarI18n(novo);
+    document.documentElement.lang = novo;
     gravarPreferencia(CHAVE_IDIOMA, novo);
     hud.trocarIdioma(i18n);
   },
@@ -108,21 +110,34 @@ tela.addEventListener('click', (ev) => {
 });
 
 let anterior = performance.now();
+let avisouErroNoQuadro = false;
+/**
+ * Um quadro da animação. O `requestAnimationFrame` fica no `finally`: um erro ao desenhar não pode
+ * congelar o canvas para sempre, e o aviso sai uma vez só para não inundar o console a 60 Hz.
+ */
 function quadro(agora) {
-  const dt = Math.min(100, agora - anterior);
-  anterior = agora;
-  foraDoMapa = elenco.sincronizar(estado).foraDoMapa; // aplica o debounce de sala a cada quadro
-  elenco.atualizar(dt);
-  desenharCena(ctx, {
-    atores: elenco.atores(),
-    sprites,
-    i18n,
-    salas: estado.salas,
-    crachas: estado.crachas,
-    tempo: agora,
-    reduzirMovimento: elenco.movimentoReduzido,
-  });
-  window.requestAnimationFrame(quadro);
+  try {
+    const dt = Math.min(100, agora - anterior);
+    anterior = agora;
+    elenco.sincronizar(estado); // aplica o debounce de sala a cada quadro
+    elenco.atualizar(dt);
+    desenharCena(ctx, {
+      atores: elenco.atores(),
+      sprites,
+      i18n,
+      salas: estado.salas,
+      crachas: estado.crachas,
+      tempo: agora,
+      reduzirMovimento: elenco.movimentoReduzido,
+    });
+  } catch (erro) {
+    if (!avisouErroNoQuadro) {
+      avisouErroNoQuadro = true;
+      console.warn(`[escritório] erro ao desenhar o quadro: ${erro.message}`);
+    }
+  } finally {
+    window.requestAnimationFrame(quadro);
+  }
 }
 window.requestAnimationFrame(quadro);
 

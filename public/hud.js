@@ -35,6 +35,10 @@ export function criarHud({ doc, raiz, i18n, painelAberto = true, aoTrocarIdioma 
   painel.hidden = !painelAberto;
   const tituloPainel = el(doc, 'h2', 'painel-titulo');
   const lista = el(doc, 'div', 'projetos');
+  painel.id = 'painel';
+  painel.setAttribute('aria-labelledby', 'painel-titulo');
+  tituloPainel.id = 'painel-titulo';
+  botaoPainel.setAttribute('aria-controls', 'painel');
   painel.append(tituloPainel, lista);
   doc.body.classList.toggle('com-painel', painelAberto); // o palco cede a largura do painel (estilo.css)
 
@@ -111,16 +115,18 @@ export function criarHud({ doc, raiz, i18n, painelAberto = true, aoTrocarIdioma 
   }
 
   function desenharTituloPainel() {
-    tituloPainel.textContent = `${lingua.numero(estadoAtual.advogados.length)} ${lingua.t('advogados')}`;
+    const n = estadoAtual.advogados.length;
+    tituloPainel.textContent = `${lingua.numero(n)} ${lingua.t(n === 1 ? 'advogado' : 'advogados')}`;
   }
 
   /**
-   * Reconstrói a lista de projetos. Guarda o foco antes (Tab pelo painel não pode "cair" a cada
-   * delta do fluxo) e o devolve à mesma linha depois. Com a ficha aberta, `atualizar` nem chama
-   * isto: a lista fica congelada e só a ficha muda.
+   * Reconstrói a lista de projetos. Guarda o foco e a rolagem antes (Tab pelo painel não pode
+   * "cair" a cada delta do fluxo, nem a lista saltar para o topo) e os devolve depois. Com a
+   * ficha aberta, `atualizar` nem chama isto: a lista fica congelada e só a ficha muda.
    */
   function desenharPainel() {
     const focoId = doc.activeElement?.dataset?.id;
+    const rolagem = painel.scrollTop; // replaceChildren zera a rolagem do painel: guardada aqui, devolvida no fim
     lista.replaceChildren();
     if (!estadoAtual.conectado) {
       lista.append(el(doc, 'p', 'vazio', lingua.t('semConexao')));
@@ -136,6 +142,7 @@ export function criarHud({ doc, raiz, i18n, painelAberto = true, aoTrocarIdioma 
       for (const advogado of grupo.advogados) bloco.append(linhaDoAdvogado(advogado));
       lista.append(bloco);
     }
+    painel.scrollTop = rolagem;
     if (focoId) lista.querySelector('[data-id="' + CSS.escape(focoId) + '"]')?.focus();
   }
 

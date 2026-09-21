@@ -14,6 +14,8 @@ test('t, cargo e estado traduzem e caem no pt-BR quando falta chave', () => {
   assert.equal(en.t('casoAtual'), 'Current case');
   assert.equal(pt.t('semConexao'), 'Sem conexão com o servidor');
   assert.equal(en.t('semConexao'), 'No connection to the server');
+  assert.equal(pt.t('advogado'), 'advogado');
+  assert.equal(en.t('advogado'), 'lawyer');
   assert.equal(pt.cargo('socio'), 'Sócio(a)');
   assert.equal(en.cargo('socio'), 'Partner');
   assert.equal(en.estado('trabalhando'), 'working');

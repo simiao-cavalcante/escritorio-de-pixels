@@ -66,7 +66,7 @@ export function aplicarMensagem(estado, tipo, dados) {
 
 /**
  * Liga o redutor a um EventSource. `criarFonte` devolve algo com
- * addEventListener(tipo, fn), onerror e close() — o EventSource do navegador serve.
+ * addEventListener(tipo, fn) — inclusive 'error' — e close(). O EventSource do navegador serve.
  */
 export function criarClienteFluxo({ criarFonte, aoEstado = () => {}, aoErro = () => {} }) {
   let estado = estadoInicial();

@@ -131,3 +131,17 @@ test('posicaoJuntoAPorta fica dentro da sala e varia por índice', () => {
     assert.ok(vistos.size >= 2, `${id}: posições não se deslocam por índice`);
   }
 });
+
+test('posicaoJuntoAPorta dá seis posições distintas e interiores em toda sala', () => {
+  for (const id of IDS) {
+    const s = SALAS[id];
+    const vistos = new Set();
+    for (let i = 0; i < 6; i += 1) {
+      const p = posicaoJuntoAPorta(id, i);
+      assert.ok(p.x > s.x0 && p.x < s.x1 && p.y > s.y0 && p.y < s.y1, `${id}: ${p.x},${p.y} fora do interior`);
+      vistos.add(`${p.x},${p.y}`);
+    }
+    assert.equal(vistos.size, 6, `${id}: índices 0..5 deveriam dar seis posições distintas`);
+  }
+  assert.notDeepEqual(posicaoJuntoAPorta('cartorio', 0), posicaoJuntoAPorta('cartorio', 1));
+});

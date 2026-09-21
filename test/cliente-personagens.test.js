@@ -246,3 +246,26 @@ test('definirMovimentoReduzido(true) encerra as rotas em curso na hora e zera a 
   elenco.definirMovimentoReduzido(false);
   assert.equal(elenco.movimentoReduzido, false);
 });
+
+test('sem posto, cada um fica em pé numa posição diferente e a vaga é reaproveitada', () => {
+  const elenco = criarElenco({ agora: () => 0, reduzirMovimento: true });
+  const advogados = [];
+  for (let i = 0; i < 6; i += 1) advogados.push(advogado(`claude:s${i}`, { sala: 'cartorio', ultimaAtividade: 100 - i }));
+  elenco.sincronizar({ advogados, estagiarios: [] });
+  assert.deepEqual(advogados.map((a) => elenco.postoDe(a.id)), [0, 1, 2, null, null, null]);
+
+  const emPe = ['claude:s3', 'claude:s4', 'claude:s5'].map((id) => elenco.ator(id));
+  const lugares = emPe.map((a) => `${a.x},${a.y}`);
+  assert.equal(new Set(lugares).size, 3, `em pé sobrepostos: ${lugares.join(' ')}`);
+  for (const a of emPe) assert.equal(salaEm(a.x, a.y), 'cartorio');
+
+  // o quarto sai: quem chega depois pega a vaga em pé liberada, sem pisar nos dois que ficaram
+  const restantes = [...advogados.slice(0, 3), ...advogados.slice(4)];
+  elenco.sincronizar({ advogados: restantes, estagiarios: [] });
+  elenco.sincronizar({ advogados: [...restantes, advogado('claude:s9', { sala: 'cartorio', ultimaAtividade: 1 })], estagiarios: [] });
+  const novo = elenco.ator('claude:s9');
+  assert.equal(elenco.postoDe('claude:s9'), null, 'os três postos do cartório continuam ocupados');
+  const outros = ['claude:s4', 'claude:s5'].map((id) => `${elenco.ator(id).x},${elenco.ator(id).y}`);
+  assert.equal(outros.includes(`${novo.x},${novo.y}`), false, `claude:s9 em cima de outro: ${novo.x},${novo.y}`);
+  assert.equal(salaEm(novo.x, novo.y), 'cartorio');
+});

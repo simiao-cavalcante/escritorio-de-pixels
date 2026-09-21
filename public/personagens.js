@@ -8,6 +8,7 @@ export const LIMITE_ESTAGIARIOS = 6;
 export const VELOCIDADE_TILES_S = 3;
 export const DEBOUNCE_SALA_MS = 1000;
 export const RAIO_ORBITA = 1;
+const LIMITE_EM_PE = 64; // busca limitada de vaga em pé: com 24 advogados nunca se esgota
 
 export function ordenarPorAtividade(advogados) {
   return [...advogados].sort((a, b) => (b.ultimaAtividade ?? 0) - (a.ultimaAtividade ?? 0) || a.id.localeCompare(b.id));
@@ -52,7 +53,30 @@ export function criarElenco({ agora = () => Date.now(), reduzirMovimento = false
       }
     }
     ator.posto = null;
-    return { ...posicaoJuntoAPorta(sala, ator.indice), movel: null, emPe: true };
+    return { ...vagaEmPe(ator, sala), movel: null, emPe: true };
+  }
+
+  /** Alguém que não `ator` já reivindicou esse tile em pé nessa sala? */
+  function tileEmPeOcupado(ator, sala, p) {
+    for (const outro of atores.values()) {
+      if (outro !== ator && outro.sala === sala && outro.posto === null && outro.alvo?.emPe
+        && outro.alvo.x === p.x && outro.alvo.y === p.y) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Primeiro deslocamento junto à porta que ninguém em pé nessa sala ocupa. `ator.sala` já é a
+   * sala nova quando isto roda, daí excluir o próprio ator; estagiário orbitando tem
+   * `sala === null` e nunca disputa o tile.
+   */
+  function vagaEmPe(ator, sala) {
+    let p = posicaoJuntoAPorta(sala, 0);
+    for (let k = 0; k < LIMITE_EM_PE; k += 1) {
+      p = posicaoJuntoAPorta(sala, k);
+      if (!tileEmPeOcupado(ator, sala, p)) break;
+    }
+    return p;
   }
 
   /**

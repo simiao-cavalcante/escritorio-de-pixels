@@ -179,17 +179,31 @@ export function postosDaSala(sala) {
   return SALAS[sala]?.postos ?? [];
 }
 
-/** Posição em pé junto à porta, deslocada por índice, para quem não achou posto livre. */
+/**
+ * Posição em pé junto à porta, para quem não achou posto livre. Índices consecutivos dão células
+ * distintas do interior da sala, da mais perto da porta para a mais longe; cheia a primeira fila
+ * rente à porta, a seguinte recua mais um tile para dentro. Nunca em cima da parede.
+ */
 export function posicaoJuntoAPorta(sala, indice) {
   const s = SALAS[sala];
   const dentro = s.porta.y === s.y0 ? 1 : s.porta.y === s.y1 ? -1 : 0;
   const lado = dentro === 0 ? (s.porta.x === s.x0 ? 1 : -1) : 0;
-  const deslocamento = (indice % 3) - 1;
-  const x = s.porta.x + (dentro === 0 ? lado : deslocamento);
-  const y = s.porta.y + (dentro === 0 ? deslocamento : dentro);
-  // Nunca em cima da parede: preso ao interior da sala.
-  return {
-    x: Math.min(Math.max(x, s.x0 + 1), s.x1 - 1),
-    y: Math.min(Math.max(y, s.y0 + 1), s.y1 - 1),
-  };
+  const i = Number.isFinite(indice) && indice > 0 ? Math.trunc(indice) : 0;
+  const preso = (v, min, max) => Math.min(Math.max(v, min), max);
+  const perto = (a, b, centro) => Math.abs(a - centro) - Math.abs(b - centro) || a - b;
+
+  if (dentro !== 0) {
+    // Porta na parede de cima ou de baixo: a fila corre pelas colunas do interior.
+    const colunas = [];
+    for (let x = s.x0 + 1; x <= s.x1 - 1; x += 1) colunas.push(x);
+    colunas.sort((a, b) => perto(a, b, s.porta.x));
+    const fila = 1 + Math.floor(i / colunas.length);
+    return { x: colunas[i % colunas.length], y: preso(s.porta.y + dentro * fila, s.y0 + 1, s.y1 - 1) };
+  }
+  // Porta numa parede lateral: a fila corre pelas linhas do interior.
+  const linhas = [];
+  for (let y = s.y0 + 1; y <= s.y1 - 1; y += 1) linhas.push(y);
+  linhas.sort((a, b) => perto(a, b, s.porta.y));
+  const coluna = 1 + Math.floor(i / linhas.length);
+  return { x: preso(s.porta.x + lado * coluna, s.x0 + 1, s.x1 - 1), y: linhas[i % linhas.length] };
 }

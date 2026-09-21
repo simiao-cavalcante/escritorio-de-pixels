@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { desenharCena, atorEm, LARGURA_PERSONAGEM, ALTURA_PERSONAGEM } from '../public/render.js';
+import { desenharCena, atorEm, LARGURA_PERSONAGEM, ALTURA_PERSONAGEM, ESCALA_ESTAGIARIO } from '../public/render.js';
 import { criarElenco } from '../public/personagens.js';
 import { criarI18n } from '../public/i18n.js';
 import { CORES } from '../public/cores.js';
@@ -198,4 +198,19 @@ test('atorEm acerta o retângulo do personagem e devolve null fora dele', () => 
   assert.equal(atorEm(atores, px, py - ALTURA_PERSONAGEM / 2)?.id, 'claude:s1');
   assert.equal(atorEm(atores, px + LARGURA_PERSONAGEM, py), null);
   assert.equal(atorEm(atores, SALAS.copa.postos[0].x * TILE, SALAS.copa.postos[0].y * TILE), null);
+});
+
+test('estagiário é desenhado com ESCALA_ESTAGIARIO', () => {
+  const ctx = contextoFalso();
+  const { cena } = cenaCom({
+    advogados: [advogado({ estagiarios: ['claude:s1:a0'] })],
+    estagiarios: [{ id: 'claude:s1:a0', sessao: 's1', tipo: 'pesquisa', estado: 'pensando', sala: 'reunioes', atividade: null, ultimaAtividade: 1 }],
+  }, { sprites: spritesCheio });
+  desenharCena(ctx, cena);
+  const personagens = ctx.chamadas.filter(
+    (c) => c.nome === 'drawImage' && String(c.args[0]?.id ?? '').startsWith('personagem-'),
+  );
+  assert.equal(personagens.length, 2, 'um advogado e um estagiário desenhados pelo atlas');
+  const tamanhos = personagens.map((c) => `${c.args[3]}x${c.args[4]}`).sort();
+  assert.deepEqual(tamanhos, [`${32 * ESCALA_ESTAGIARIO}x${48 * ESCALA_ESTAGIARIO}`, '32x48'].sort());
 });
