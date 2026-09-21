@@ -4,12 +4,17 @@
   "description": "Escritório de advocacia em pixel art que mostra, em tempo real, o trabalho de agentes de IA (Claude Code, Codex, Grok, Cursor, Gemini).",
   "type": "module",
   "bin": { "escritorio-de-pixels": "./server.mjs" },
-  "files": ["server.mjs", "src/", "public/", "salas.json", "cargos.json", "adaptadores/", "docs/protocolo.md", "docs/adaptadores.md", "README.md", "README.en.md", "LICENSE"],
+  "files": ["server.mjs", "src/", "public/", "salas.json", "cargos.json", "adaptadores/", "docs/protocolo.md", "docs/adaptadores.md", "docs/demo.gif", "arte/CREDITOS.md", "README.md", "README.en.md", "LICENSE"],
   "engines": { "node": ">=20" },
+  "repository": { "type": "git", "url": "git+https://github.com/simiaocavalcanteia-arch/escritorio-de-pixels.git" },
+  "homepage": "https://github.com/simiaocavalcanteia-arch/escritorio-de-pixels#readme",
+  "bugs": { "url": "https://github.com/simiaocavalcanteia-arch/escritorio-de-pixels/issues" },
+  "keywords": ["claude-code", "codex", "cursor", "grok", "gemini-cli", "pixel-art", "ai-agents", "visualization", "legal-tech", "hooks", "sse", "pt-br"],
+  "author": "Simião Cavalcante",
+  "license": "MIT",
   "scripts": {
     "start": "node server.mjs",
     "demo": "node server.mjs --demo",
     "test": "node --test test/*.test.js"
-  },
-  "license": "MIT"
+  }
 }
