@@ -1,0 +1,15 @@
+{
+  "name": "escritorio-de-pixels",
+  "version": "0.1.0",
+  "description": "Escritório de advocacia em pixel art que mostra, em tempo real, o trabalho de agentes de IA (Claude Code, Codex, Grok, Cursor, Gemini).",
+  "type": "module",
+  "bin": { "escritorio-de-pixels": "./server.mjs" },
+  "files": ["server.mjs", "src/", "public/", "salas.json", "cargos.json", "adaptadores/", "docs/protocolo.md", "docs/adaptadores.md", "README.md", "README.en.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server.mjs",
+    "demo": "node server.mjs --demo",
+    "test": "node --test test/*.test.js"
+  },
+  "license": "MIT"
+}
