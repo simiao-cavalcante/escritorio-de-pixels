@@ -1,0 +1,3 @@
+# Ferramentas de desenvolvimento da arte. O servidor continua com zero dependências.
+openai>=1.40
+Pillow>=10.4
