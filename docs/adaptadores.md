@@ -238,6 +238,8 @@ Particularidades:
   `BeforeTool`/`AfterTool` viram `ferramenta.inicio`/`ferramenta.fim` e `AfterModel` vira
   `tokens` (e atualiza o modelo a partir de `llm_response`).
 - Sem eventos de subagente: o Gemini não aparece com estagiários.
+- `Notification` vira `aguardando` (com `motivo: "pergunta"`, fixo — confira
+  `src/tradutores/gemini.js`).
 - O tradutor nasceu da documentação, com fixtures sintéticas. **Não foi testado numa
   instalação real** — o Gemini CLI não está instalada nesta máquina (ver Pendências
   abaixo). Se você usa o Gemini CLI, confira `GET /saude` (campo `ignorados`) e abra uma

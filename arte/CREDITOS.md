@@ -42,5 +42,5 @@ python3 arte/gerar.py --so movel-cafe --modelo gpt-image-2.5-sunburst   # teste 
 Trocar de modelo em definitivo é editar `"modelo"` em `arte/manifesto.json`: o hash de cada
 asset inclui o modelo, e `--modelo` sozinho faria o lote inteiro ser regerado duas vezes.
 
-O app funciona sem arte: sem `public/arte/atlas.json`, `public/sprites.js` desenha
+O app funciona sem arte: sem `public/arte/atlas.json`, o cliente (Plano 2) desenha
 placeholders procedurais e avisa uma vez no console.

@@ -29,6 +29,8 @@ cópia recebida em dobro quando o arquivo dedicado do Grok também está instala
     `GET /saude` no tique de 1 s e só emite quando algum contador de fato mudou.
   - A cada 15 s sem tráfego, um comentário SSE (`: ping`) mantém a conexão viva.
   - No máximo 8 clientes simultâneos; o nono recebe `503`.
+  - Buffer de escrita de 1 MB por cliente (`maxBuffer` em `src/fluxo.js`): um cliente lento
+    cujo buffer ultrapassa o limite é desconectado; ele reconecta e recebe um snapshot novo.
 - `GET /estado` devolve o mesmo objeto do snapshot inicial, **incluindo o `seq` atual** —
   útil para depuração e para conferir se um cliente ficou para trás.
 - `GET /saude` devolve só os contadores por adaptador (o mesmo objeto que viaja dentro do
@@ -104,6 +106,9 @@ qualquer estado.
 | `sessao` | 200 caracteres | evento rejeitado |
 | Sessões simultâneas | 64 | despeja a sessão mais antiga, na ordem `saiu` → `ocioso` → viva qualquer (ver nota) |
 | Estagiários por sessão | 32 | substitui o mais antigo entre os que não estão trabalhando (senão, o mais antigo mesmo trabalhando) |
+| Chamadas de ferramenta pendentes por advogado | 16 | descarta a pendente mais antiga (fila circular) |
+| Chamadas de ferramenta pendentes por estagiário | 8 | descarta a pendente mais antiga (fila circular) |
+| Ações recentes (ficha do advogado) | 8 | descarta a ação mais antiga (fila circular) |
 | Clientes de `/fluxo` | 8 | `503` |
 
 O despejo por limite de sessões escolhe a vítima nessa ordem de prioridade — sessões já
