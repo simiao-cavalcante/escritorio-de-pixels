@@ -1,0 +1,75 @@
+{
+  "versao": 1,
+  "padrao": "advogado",
+  "cargos": [
+    {
+      "id": "junior",
+      "padroes": [
+        "haiku",
+        "\\bmini\\b",
+        "nano",
+        "flash-lite",
+        "local"
+      ]
+    },
+    {
+      "id": "socio",
+      "padroes": [
+        "fable",
+        "mythos",
+        "gpt-6",
+        "astra",
+        "ultra",
+        "grok-5"
+      ]
+    },
+    {
+      "id": "senior",
+      "padroes": [
+        "opus",
+        "gpt-5\\.[4-9]",
+        "gemini-3.*pro",
+        "grok-4"
+      ]
+    },
+    {
+      "id": "associado",
+      "padroes": [
+        "sonnet",
+        "gpt-5",
+        "gemini.*flash",
+        "codex"
+      ]
+    }
+  ],
+  "clis": {
+    "claude": {
+      "cor": "#c2603e",
+      "sigla": "CL"
+    },
+    "codex": {
+      "cor": "#2e9e5b",
+      "sigla": "CX"
+    },
+    "gemini": {
+      "cor": "#3b7dd8",
+      "sigla": "GM"
+    },
+    "grok": {
+      "cor": "#4a4a4a",
+      "sigla": "GK"
+    },
+    "cursor": {
+      "cor": "#7c4dff",
+      "sigla": "CU"
+    },
+    "opencode": {
+      "cor": "#1fa8a0",
+      "sigla": "OC"
+    }
+  },
+  "cliPadrao": {
+    "cor": "#8a8a8a",
+    "sigla": "??"
+  }
+}
