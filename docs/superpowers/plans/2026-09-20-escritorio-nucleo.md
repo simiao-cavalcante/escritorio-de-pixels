@@ -75,7 +75,7 @@ Spec: `docs/superpowers/specs/2026-09-20-escritorio-de-pixels-design.md` (seçõ
   "scripts": {
     "start": "node server.mjs",
     "demo": "node server.mjs --demo",
-    "test": "node --test test/"
+    "test": "node --test test/*.test.js"
   },
   "license": "MIT"
 }
