@@ -78,7 +78,8 @@ export function criarDeduplicador({ agora = () => Date.now(), janelaMs = 2000 } 
     const t = agora();
     for (const [k, v] of vistos) if (t - v > janelaMs) vistos.delete(k);
     const seg = Math.floor(new Date(ev.ts).getTime() / 1000);
-    const chave = [ev.cli, ev.sessao, ev.tipo, ev.ferramenta?.id ?? ev.ferramenta?.nome ?? '', ev.agente?.id ?? '', seg].join('|');
+    // JSON.stringify (não join('|')) evita colisão quando cli/sessao contêm '|'.
+    const chave = JSON.stringify([ev.cli, ev.sessao, ev.tipo, ev.ferramenta?.id ?? ev.ferramenta?.nome ?? '', ev.agente?.id ?? '', seg]);
     if (vistos.has(chave)) return false;
     vistos.set(chave, t);
     return true;
@@ -116,7 +117,12 @@ export function lerCauda(caminho, maxBytes) {
     const buf = Buffer.alloc(len);
     readSync(fd, buf, 0, len, size - len);
     const texto = buf.toString('utf8');
-    return len < size ? texto.slice(texto.indexOf('\n') + 1) : texto;
+    if (len < size) {
+      const i = texto.indexOf('\n');
+      // Sem '\n' no trecho cortado: é tudo linha parcial, descarta (não devolve o buffer inteiro).
+      return i === -1 ? '' : texto.slice(i + 1);
+    }
+    return texto;
   } catch {
     return null;
   } finally {
@@ -126,6 +132,7 @@ export function lerCauda(caminho, maxBytes) {
 
 // Faz parse de um texto linha a linha (JSONL), ignorando linhas vazias e inválidas.
 export function linhasJson(texto) {
+  if (!texto) return [];
   const saida = [];
   for (const l of texto.split('\n')) {
     if (!l.trim()) continue;

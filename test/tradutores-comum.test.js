@@ -68,3 +68,28 @@ test('dentroDe, lerCauda e linhasJson', () => {
   assert.deepEqual(linhasJson(cauda).map((o) => o.n), [3]);
   assert.equal(lerCauda(join(dir, 'x'), 10), null);
 });
+
+test('deduplicador não colide quando cli/sessao contêm "|"', () => {
+  let t = 0;
+  const novo = criarDeduplicador({ agora: () => t, janelaMs: 2000 });
+  const comum = { tipo: 'ferramenta.inicio', ts: '2026-09-20T12:00:00.000Z' };
+  const e1 = { ...comum, cli: 'a', sessao: 'b|c' };
+  const e2 = { ...comum, cli: 'a|b', sessao: 'c' };
+  assert.equal(novo(e1), true);
+  assert.equal(novo(e2), true);
+});
+
+test('linhasJson tolera null e string vazia', () => {
+  assert.deepEqual(linhasJson(null), []);
+  assert.deepEqual(linhasJson(''), []);
+});
+
+test('lerCauda descarta linha parcial sem "\\n" na janela cortada', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'edp-'));
+  const arq = join(dir, 'longa.jsonl');
+  const linhaLonga = `{"n":1,"x":"${'a'.repeat(50)}"}`; // uma única linha, sem \n final
+  writeFileSync(arq, linhaLonga);
+  const cauda = lerCauda(arq, 10); // corta no meio da linha; a janela lida não tem \n
+  assert.equal(cauda, '');
+  assert.deepEqual(linhasJson(cauda), []);
+});
