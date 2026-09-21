@@ -187,7 +187,7 @@ export function criarElenco({ agora = () => Date.now(), reduzirMovimento = false
         filho.orbitando = !estagiario.atividade;
         if (filho.orbitando) {
           liberarPosto(filho);
-          filho.sala = estagiario.sala ?? filho.sala;
+          filho.sala = null; // orbitando = sem sala reivindicada; a próxima atividade sempre dispara debounce + rota
           filho.rota = [];
           filho.aresta = null;
           filho.salaPendente = null;
@@ -267,6 +267,22 @@ export function criarElenco({ agora = () => Date.now(), reduzirMovimento = false
     postoDe: (id) => atores.get(id)?.posto ?? null,
     definirMovimentoReduzido(valor) {
       movimentoReduzido = Boolean(valor);
+      if (movimentoReduzido) {
+        // Deslocamento instantâneo: encerra qualquer rota em curso já no ponto final dela.
+        for (const ator of atores.values()) {
+          if (ator.rota.length) {
+            const ultimo = ator.rota[ator.rota.length - 1];
+            ator.x = ultimo.x;
+            ator.y = ultimo.y;
+          }
+        }
+        for (const ator of atores.values()) {
+          ator.rota = [];
+          ator.aresta = null;
+          ator.andando = false;
+          ator.fase = 0;
+        }
+      }
     },
     get movimentoReduzido() {
       return movimentoReduzido;

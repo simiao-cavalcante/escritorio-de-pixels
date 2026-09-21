@@ -189,3 +189,60 @@ test('advogado que some do estado sai do elenco e devolve o posto', () => {
   elenco.sincronizar({ advogados: [advogado('codex:s2', { sala: 'revisao' })], estagiarios: [] });
   assert.equal(elenco.postoDe('codex:s2'), 0);
 });
+
+test('estagiário orbitando que ganha atividade na sala em que já estava marcado caminha até o posto', () => {
+  const r = relogio(0);
+  const elenco = criarElenco({ agora: r.agora, reduzirMovimento: true });
+  const id = 'claude:s1:a0';
+  const estado = {
+    advogados: [advogado('claude:s1', { sala: 'gabinete', estagiarios: [id] })],
+    estagiarios: [estagiario(id, { sala: 'reunioes', atividade: null })],
+  };
+  elenco.sincronizar(estado);
+  elenco.atualizar(16);
+  assert.equal(elenco.ator(id).orbitando, true);
+  assert.equal(elenco.postoDe(id), null);
+
+  const comAtividade = {
+    advogados: estado.advogados,
+    estagiarios: [estagiario(id, { sala: 'reunioes', atividade: { nome: 'Agent', detalhe: 'pesquisa' } })],
+  };
+  elenco.sincronizar(comAtividade);
+  r.avancar(DEBOUNCE_SALA_MS + 1);
+  elenco.sincronizar(comAtividade);
+  elenco.atualizar(16);
+  const filho = elenco.ator(id);
+  assert.equal(filho.orbitando, false);
+  assert.equal(elenco.postoDe(id), 0);
+  assert.equal(salaEm(filho.x, filho.y), 'reunioes');
+  assert.deepEqual({ x: filho.x, y: filho.y }, { x: SALAS.reunioes.postos[0].x, y: SALAS.reunioes.postos[0].y });
+});
+
+test('definirMovimentoReduzido(true) encerra as rotas em curso na hora e zera a fase', () => {
+  const r = relogio(0);
+  const elenco = criarElenco({ agora: r.agora });
+  elenco.sincronizar({ advogados: [advogado('claude:s1', { sala: 'recepcao' })], estagiarios: [] });
+  const ator = elenco.ator('claude:s1');
+  elenco.atualizar(5000); // chega no posto da recepção
+
+  r.avancar(1);
+  elenco.sincronizar({ advogados: [advogado('claude:s1', { sala: 'revisao' })], estagiarios: [] });
+  r.avancar(DEBOUNCE_SALA_MS + 1);
+  elenco.sincronizar({ advogados: [advogado('claude:s1', { sala: 'revisao' })], estagiarios: [] });
+  elenco.atualizar(300);
+  assert.equal(ator.andando, true);
+  assert.ok(ator.rota.length > 0);
+
+  elenco.definirMovimentoReduzido(true);
+  assert.equal(elenco.movimentoReduzido, true);
+  assert.equal(ator.andando, false);
+  assert.deepEqual(ator.rota, []);
+  assert.equal(ator.aresta, null);
+  assert.deepEqual({ x: ator.x, y: ator.y }, { x: SALAS.revisao.postos[0].x, y: SALAS.revisao.postos[0].y });
+
+  elenco.atualizar(16);
+  assert.equal(ator.fase, 0);
+
+  elenco.definirMovimentoReduzido(false);
+  assert.equal(elenco.movimentoReduzido, false);
+});
