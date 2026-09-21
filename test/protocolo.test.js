@@ -74,3 +74,12 @@ test('normalizarLote aceita objeto ou array e separa rejeitados por índice', ()
   assert.equal(normalizarLote({ ...base, tipo: 'parado' }, agora).eventos.length, 1);
   assert.equal(TIPOS.length, 10);
 });
+
+test('cwd é truncado em 256 caracteres, como os demais textos livres', () => {
+  const longo = `/x/${'a'.repeat(400)}`;
+  const r = normalizarEvento({ ...base, tipo: 'sessao.inicio', cwd: longo }, agora);
+  assert.equal(r.ok, true);
+  assert.equal(r.evento.cwd.length, 256);
+  assert.ok(r.evento.cwd.endsWith('…'));
+  assert.equal(normalizarEvento({ ...base, tipo: 'sessao.inicio', cwd: '   ' }, agora).evento.cwd, undefined);
+});

@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { CARGOS, CARGOS_EMBUTIDOS, validarConfigCargos, criarClassificador, carregarCargos } from '../src/cargos.js';
 
 const padrao = () => criarClassificador(validarConfigCargos(CARGOS_EMBUTIDOS).config);
@@ -26,10 +27,15 @@ test('variantes pequenas vencem a família; sem regra cai no cargo neutro', () =
   assert.equal(cargoDoModelo(undefined), 'advogado');
 });
 
-test('crachá por CLI com fallback', () => {
+test('crachá por CLI com fallback, inclusive para nomes herdados de Object.prototype', () => {
   const { crachaDaCli } = padrao();
+  const padraoCracha = { cor: '#8a8a8a', sigla: '??' };
   assert.deepEqual(crachaDaCli('claude'), { cor: '#c2603e', sigla: 'CL' });
-  assert.deepEqual(crachaDaCli('desconhecida'), { cor: '#8a8a8a', sigla: '??' });
+  assert.deepEqual(crachaDaCli('desconhecida'), padraoCracha);
+  // o nome da CLI vem da rota /hook/<cli>: não pode alcançar o protótipo
+  for (const hostil of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+    assert.deepEqual(crachaDaCli(hostil), padraoCracha, hostil);
+  }
 });
 
 test('validação rejeita id de cargo, regex e cor inválidos', () => {
@@ -51,4 +57,9 @@ test('carregarCargos cai nas embutidas quando o arquivo é inválido', () => {
   const c2 = carregarCargos(caminho);
   assert.equal(c2.cargoDoModelo('claude-opus-5'), 'socio');
   assert.equal(c2.cargoDoModelo('claude-fable-5-1'), 'junior');
+});
+
+test('cargos.json do repositório é igual às regras embutidas (arquivo e código não podem divergir)', () => {
+  const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
+  assert.deepEqual(JSON.parse(readFileSync(join(raiz, 'cargos.json'), 'utf8')), CARGOS_EMBUTIDOS);
 });

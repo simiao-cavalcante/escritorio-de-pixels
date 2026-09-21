@@ -41,7 +41,9 @@ export function validarConfigCargos(obj) {
       return { ok: false, erro: `cargo ${i}: regex inválida (${e.message})` };
     }
   }
-  const clis = {};
+  // Sem protótipo: os nomes de CLI vêm de fora (config do usuário, rota /hook/<cli>) e não
+  // podem alcançar chaves herdadas como constructor ou toString.
+  const clis = Object.create(null);
   for (const [nome, v] of Object.entries(obj.clis ?? {})) {
     if (!v || !COR_RE.test(v.cor) || typeof v.sigla !== 'string') return { ok: false, erro: `cli ${nome}: cor ou sigla inválida` };
     clis[nome] = { cor: v.cor, sigla: v.sigla.slice(0, 3) };
@@ -61,7 +63,7 @@ export function criarClassificador(config) {
       return config.padrao;
     },
     crachaDaCli(cli) {
-      return config.clis[cli] ?? config.cliPadrao;
+      return Object.hasOwn(config.clis, cli) ? config.clis[cli] : config.cliPadrao;
     },
   };
 }

@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, renameSync, mkdirSync, existsSync, copyFileSync, unlinkSync, statSync, chmodSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
-import { urlHook, comandoCurl, lerConfig, gravarConfig } from './config.js';
+import { comandoCurl, lerConfig, gravarConfig } from './config.js';
 
 export const CLIS = Object.freeze(['claude', 'codex', 'grok', 'cursor', 'gemini']);
 const MARCA = '/hook/';
@@ -31,7 +31,9 @@ export function arquivoDeHooks(cli, home = homedir()) {
 
 function entrada(cli, porta) {
   switch (cli) {
-    case 'claude': return { type: 'http', url: urlHook('claude', porta), timeout: 2 };
+    // command + async: fire-and-forget. Com hook http e o servidor fora do ar, o Claude Code
+    // mostra "hook error ECONNREFUSED" a cada chamada de ferramenta. (async ignora timeout.)
+    case 'claude': return { type: 'command', command: comandoCurl('claude', porta), async: true };
     // Grok 1.0.34 bloqueia hooks http para http:// (SSRF); usamos command.
     case 'grok': return { type: 'command', command: comandoCurl('grok', porta), timeout: 2 };
     case 'codex': return { type: 'command', command: comandoCurl('codex', porta), timeout: 2 };
@@ -40,29 +42,34 @@ function entrada(cli, porta) {
   }
 }
 
-// só reconhecemos como nosso um hook cuja url/command aponte para o /hook/ local (127.0.0.1 ou
-// localhost); um hook de terceiro que por acaso tenha "/hook/" numa URL externa não é apagado.
+// só reconhecemos como nosso um hook cuja url/command aponte para o /hook/<cli> local (127.0.0.1
+// ou localhost) DESTA cli; um hook de terceiro com "/hook/" numa URL externa, ou local mas de
+// outra ferramenta (/hook/observador), não é apagado. A porta não entra na comparação: reinstalar
+// em outra porta precisa reconhecer e substituir a entrada anterior (idempotência). Tanto a forma
+// antiga (`url`, hook http) quanto a atual (`command`, curl) são reconhecidas.
 const LOCAL = /127\.0\.0\.1|localhost/;
 
-export function ehNosso(h) {
-  if (!h || typeof h !== 'object') return false;
-  const local = (s) => typeof s === 'string' && s.includes(MARCA) && LOCAL.test(s);
-  return local(h.url) || local(h.command);
+export function ehNosso(h, cli) {
+  if (!h || typeof h !== 'object' || typeof cli !== 'string' || !cli) return false;
+  const marca = `${MARCA}${cli}`;
+  const nosso = (s) => typeof s === 'string' && s.includes(marca) && LOCAL.test(s);
+  return nosso(h.url) || nosso(h.command);
 }
 
 const objeto = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? x : {});
 const ehObjetoSimples = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
 
-function semNossosGrupos(grupos) {
+function semNossosGrupos(grupos, cli) {
   return grupos
-    .map((g) => (g && Array.isArray(g.hooks) ? { ...g, hooks: g.hooks.filter((h) => !ehNosso(h)) } : g))
+    .map((g) => (g && Array.isArray(g.hooks) ? { ...g, hooks: g.hooks.filter((h) => !ehNosso(h, cli)) } : g))
     .filter((g) => !(g && Array.isArray(g.hooks) && g.hooks.length === 0));
 }
 
 export function mesclar(cli, atual, porta) {
   exigirCli(cli);
   const cfg = structuredClone(objeto(atual));
-  if (cfg.hooks !== undefined && !ehObjetoSimples(cfg.hooks)) {
+  // "hooks": null é tratado como ausente (o arquivo pode ter sido limpo à mão).
+  if (cfg.hooks !== undefined && cfg.hooks !== null && !ehObjetoSimples(cfg.hooks)) {
     throw new Error('hooks não é um objeto; nada foi alterado');
   }
   const nossa = entrada(cli, porta);
@@ -70,14 +77,14 @@ export function mesclar(cli, atual, porta) {
   cfg.hooks = objeto(cfg.hooks);
   if (cli === 'cursor') {
     for (const ev of EVENTOS_POR_CLI.cursor) {
-      const lista = Array.isArray(cfg.hooks[ev]) ? cfg.hooks[ev].filter((h) => !ehNosso(h)) : [];
+      const lista = Array.isArray(cfg.hooks[ev]) ? cfg.hooks[ev].filter((h) => !ehNosso(h, cli)) : [];
       lista.push(nossa);
       cfg.hooks[ev] = lista;
     }
     return cfg;
   }
   for (const ev of EVENTOS_POR_CLI[cli]) {
-    const grupos = semNossosGrupos(Array.isArray(cfg.hooks[ev]) ? cfg.hooks[ev] : []);
+    const grupos = semNossosGrupos(Array.isArray(cfg.hooks[ev]) ? cfg.hooks[ev] : [], cli);
     grupos.push({ hooks: [nossa] });
     cfg.hooks[ev] = grupos;
   }
@@ -87,14 +94,14 @@ export function mesclar(cli, atual, porta) {
 export function remover(cli, atual) {
   exigirCli(cli);
   const cfg = structuredClone(objeto(atual));
-  if (cfg.hooks === undefined) return cfg;
+  if (cfg.hooks === undefined || cfg.hooks === null) return cfg;
   if (!ehObjetoSimples(cfg.hooks)) {
     throw new Error('hooks não é um objeto; nada foi alterado');
   }
   for (const ev of Object.keys(cfg.hooks)) {
     const lista = cfg.hooks[ev];
     if (!Array.isArray(lista)) continue;
-    const resto = cli === 'cursor' ? lista.filter((h) => !ehNosso(h)) : semNossosGrupos(lista);
+    const resto = cli === 'cursor' ? lista.filter((h) => !ehNosso(h, cli)) : semNossosGrupos(lista, cli);
     if (resto.length) cfg.hooks[ev] = resto;
     else delete cfg.hooks[ev];
   }

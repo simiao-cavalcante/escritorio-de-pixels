@@ -85,8 +85,10 @@ export class Escritorio {
         }
         break;
       case 'parado':
+        // As pendentes caem sempre (spec §5), inclusive em recepcao/ocioso: senão a última
+        // atividade fica colada no advogado. Só a mudança de sala depende do estado.
+        this._limparChamadas(adv, mudancas);
         if (adv.estado === 'pensando' || adv.estado === 'trabalhando' || adv.estado === 'aguardando') {
-          this._limparChamadas(adv, mudancas);
           this._mudar(adv, 'recepcao', 'recepcao');
         }
         break;

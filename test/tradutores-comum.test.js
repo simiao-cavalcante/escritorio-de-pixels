@@ -12,6 +12,15 @@ test('detectarEnvelope distingue grok, snake e camel', () => {
   assert.equal(detectarEnvelope('x'), 'invalido');
 });
 
+test('só é envelope do Grok quando hookEventName é snake_case (camelCase é do Cursor)', () => {
+  assert.equal(detectarEnvelope({ hookEventName: 'pre_tool_use' }), 'grok');
+  assert.equal(detectarEnvelope({ hookEventName: 'stop' }), 'grok');
+  assert.equal(detectarEnvelope({ hookEventName: 'preToolUse' }), 'camel');
+  assert.equal(detectarEnvelope({ hookEventName: 'sessionStart' }), 'camel');
+  // camelCase com hook_event_name junto continua sendo o envelope snake
+  assert.equal(detectarEnvelope({ hookEventName: 'preToolUse', hook_event_name: 'PreToolUse' }), 'snake');
+});
+
 test('campo devolve o primeiro valor presente e ignora vazio', () => {
   assert.equal(campo({ a: '', b: null, c: 'x' }, 'a', 'b', 'c'), 'x');
   assert.equal(campo({ a: 0 }, 'a'), 0);

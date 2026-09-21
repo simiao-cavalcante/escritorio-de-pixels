@@ -23,7 +23,7 @@ export function lerConfig(home = homedir()) {
 export function gravarConfig(config, home = homedir()) {
   const caminho = caminhoConfig(home);
   mkdirSync(dirname(caminho), { recursive: true });
-  const tmp = `${caminho}.tmp`;
+  const tmp = `${caminho}.tmp-${process.pid}`; // por processo, como em gravarAtomico (instalar.js)
   writeFileSync(tmp, `${JSON.stringify(config, null, 2)}\n`);
   renameSync(tmp, caminho);
 }

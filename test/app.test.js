@@ -275,3 +275,38 @@ test('POST /hook/claude com JSON inválido soma invalidos do claude e emite delt
     await app.fechar();
   }
 });
+
+test('sessao.fim seguido de tique emite delta remover no SSE', async () => {
+  const { app, porta } = await subir({ tiqueMs: 20 });
+  try {
+    // a lápide entra depois; aqui só interessa a remoção logo após o "saiu"
+    app.escritorio.limites.removerMs = 0;
+    const { res, esperar } = await conectarFluxo(porta);
+    await esperar('snapshot');
+    const enviar = (corpo) => bruto({
+      porta, metodo: 'POST', caminho: '/eventos',
+      headers: { host: `127.0.0.1:${porta}`, 'content-type': 'application/json' },
+      corpo: JSON.stringify(corpo),
+    });
+    await enviar(ev({ tipo: 'prompt', prompt: 'oi' }));
+    await esperar('advogado');
+    await enviar(ev({ tipo: 'sessao.fim' }));
+    const saida = await esperar('remover');
+    assert.deepEqual({ tipo: saida.tipo, id: saida.id }, { tipo: 'advogado', id: 'claude:s1' });
+    assert.deepEqual((await (await fetch(`http://127.0.0.1:${porta}/estado`)).json()).advogados, []);
+    res.destroy();
+  } finally {
+    await app.fechar();
+  }
+});
+
+test('erro do servidor depois do listen vai para o log (o reject do iniciar não fica órfão)', async () => {
+  const erros = [];
+  const { app } = await subir({ log: (m) => erros.push(m) });
+  try {
+    app.servidor.emit('error', new Error('boom'));
+    assert.ok(erros.some((m) => m.includes('boom')), `esperava o erro no log; log: ${erros.join(' | ')}`);
+  } finally {
+    await app.fechar();
+  }
+});

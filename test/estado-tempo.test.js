@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { novo, ev, adv } from './estado.test.js';
+import { novo, ev, adv } from './ajuda-estado.js';
 
 const MIN = 60_000;
 
@@ -163,4 +163,19 @@ test('limite de sessões: a sessão despejada por limite não fica bloqueada por
   assert.equal(adv(esc, 'claude:A'), undefined);
   esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', id: 'r2' }, sessao: 'A' }));
   assert.equal(adv(esc, 'claude:A').estado, 'trabalhando');
+});
+
+test('parado descarta as pendentes mesmo fora de pensando/trabalhando/aguardando (spec §5)', () => {
+  const esc = novo();
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Bash', detalhe: 'npm test', id: 'b1' } }));
+  esc.aplicar(ev('aguardando', { motivo: 'permissao' }));
+  esc.aplicar(ev('prompt', { prompt: 'continue' }));
+  assert.equal(adv(esc).estado, 'pensando');
+  assert.equal(adv(esc).atividade.nome, 'Bash'); // a pendente do Bash sobrevive ao aguardando
+  esc.avancar(2 * MIN);
+  esc.tique();
+  assert.equal(adv(esc).estado, 'ocioso');
+  esc.aplicar(ev('parado'));
+  assert.equal(adv(esc).estado, 'ocioso'); // ocioso não muda de estado com parado
+  assert.equal(adv(esc).atividade, null, 'parado descarta todas as pendentes da sessão');
 });

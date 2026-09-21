@@ -50,7 +50,8 @@ export function normalizarEvento(bruto, agora = () => Date.now()) {
   }
 
   const evento = { v: 1, tipo: bruto.tipo, cli: bruto.cli, sessao: bruto.sessao, ts };
-  if (typeof bruto.cwd === 'string' && bruto.cwd) evento.cwd = bruto.cwd;
+  const cwd = textoOpcional(bruto.cwd, 256); // caminho vem da CLI: entra truncado como os demais textos
+  if (cwd) evento.cwd = cwd;
   const projeto = textoOpcional(bruto.projeto, 80);
   if (projeto) evento.projeto = projeto;
   const modelo = textoOpcional(bruto.modelo, 80);

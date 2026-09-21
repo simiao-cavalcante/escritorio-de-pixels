@@ -4,9 +4,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -15,9 +15,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -26,9 +26,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -37,9 +37,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -48,9 +48,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -59,9 +59,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -70,9 +70,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -81,9 +81,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -92,9 +92,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -103,9 +103,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }
@@ -114,9 +114,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/claude",
-            "timeout": 2
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/claude >/dev/null 2>&1 || true",
+            "async": true
           }
         ]
       }

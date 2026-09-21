@@ -27,17 +27,24 @@ test('mesclar preserva hooks de terceiros, é idempotente e remover devolve o or
   assert.deepEqual(uma.permissions, original.permissions);
   assert.equal(uma.hooks.PreToolUse.length, 2);
   assert.deepEqual(uma.hooks.PreToolUse[0], original.hooks.PreToolUse[0]);
-  assert.equal(uma.hooks.PreToolUse[1].hooks[0].url, 'http://127.0.0.1:7777/hook/claude');
+  assert.match(uma.hooks.PreToolUse[1].hooks[0].command, /127\.0\.0\.1:7777\/hook\/claude/);
   const duas = mesclar('claude', uma, 7800);
   assert.equal(duas.hooks.PreToolUse.length, 2);
-  assert.equal(duas.hooks.PreToolUse[1].hooks[0].url, 'http://127.0.0.1:7800/hook/claude');
+  assert.match(duas.hooks.PreToolUse[1].hooks[0].command, /127\.0\.0\.1:7800\/hook\/claude/);
   assert.deepEqual(remover('claude', duas), original);
   assert.deepEqual(remover('claude', { a: 1 }), { a: 1 });
-  assert.equal(ehNosso({ type: 'http', url: 'http://127.0.0.1:1/hook/x' }), true);
-  assert.equal(ehNosso({ command: 'curl http://localhost:7777/hook/x' }), true);
-  assert.equal(ehNosso({ command: 'echo /hook/' }), false);
-  assert.equal(ehNosso({ command: 'echo' }), false);
-  assert.equal(ehNosso({ url: 'https://ci.exemplo/hook/deploy' }), false);
+  assert.equal(ehNosso({ type: 'http', url: 'http://127.0.0.1:1/hook/x' }, 'x'), true);
+  assert.equal(ehNosso({ command: 'curl http://localhost:7777/hook/x' }, 'x'), true);
+  assert.equal(ehNosso({ command: 'echo /hook/' }, 'x'), false);
+  assert.equal(ehNosso({ command: 'echo' }, 'x'), false);
+  assert.equal(ehNosso({ url: 'https://ci.exemplo/hook/deploy' }, 'deploy'), false);
+  assert.equal(ehNosso({ url: 'http://127.0.0.1:1/hook/x' }, undefined), false);
+});
+
+test('"hooks": null é tratado como ausente em mesclar e remover', () => {
+  const amostra = JSON.parse(readFileSync(join(RAIZ, 'adaptadores', 'claude.hooks.json'), 'utf8'));
+  assert.deepEqual(mesclar('claude', { hooks: null }, 7777), amostra);
+  assert.deepEqual(remover('claude', { hooks: null }), { hooks: null });
 });
 
 test('ehNosso exige host local: hook de terceiro com /hook/ em URL externa sobrevive a instalar e desinstalar', () => {
@@ -58,6 +65,40 @@ test('ehNosso exige host local: hook de terceiro com /hook/ em URL externa sobre
   assert.equal(reinstalado.hooks.PreToolUse.length, 2);
   desinstalar('claude', { home, agora });
   assert.deepEqual(JSON.parse(readFileSync(arquivo, 'utf8')), original);
+});
+
+test('ehNosso é por CLI: hook local de outra ferramenta (/hook/outra) sobrevive a instalar e desinstalar', () => {
+  const home = casa();
+  const arquivo = arquivoDeHooks('claude', home);
+  mkdirSync(dirname(arquivo), { recursive: true });
+  const alheio = { type: 'command', command: 'curl -s http://localhost:9999/hook/observador' };
+  const original = { hooks: { PreToolUse: [{ hooks: [alheio] }] } };
+  writeFileSync(arquivo, JSON.stringify(original));
+  instalar('claude', { home, porta: 7777, agora });
+  const instalado = JSON.parse(readFileSync(arquivo, 'utf8'));
+  assert.equal(instalado.hooks.PreToolUse.length, 2);
+  assert.deepEqual(instalado.hooks.PreToolUse[0], { hooks: [alheio] });
+  // reinstalar com outra porta continua idempotente para a nossa entrada
+  instalar('claude', { home, porta: 7800, agora });
+  assert.equal(JSON.parse(readFileSync(arquivo, 'utf8')).hooks.PreToolUse.length, 2);
+  desinstalar('claude', { home, agora });
+  assert.deepEqual(JSON.parse(readFileSync(arquivo, 'utf8')), original);
+  assert.equal(ehNosso(alheio, 'claude'), false);
+  assert.equal(ehNosso({ url: 'http://127.0.0.1:7777/hook/claude' }, 'claude'), true);
+  assert.equal(ehNosso({ url: 'http://127.0.0.1:7777/hook/claude' }, 'grok'), false);
+});
+
+test('claude: a entrada antiga (http) é reconhecida e substituída pela nova (command async)', () => {
+  const antigo = { hooks: { PreToolUse: [{ hooks: [{ type: 'http', url: 'http://127.0.0.1:7777/hook/claude', timeout: 2 }] }] } };
+  const m = mesclar('claude', antigo, 7777);
+  assert.equal(m.hooks.PreToolUse.length, 1, 'a forma http antiga não pode duplicar');
+  const nossa = m.hooks.PreToolUse[0].hooks[0];
+  assert.equal(nossa.type, 'command');
+  assert.equal(nossa.async, true);
+  assert.equal(nossa.timeout, undefined); // com async o Claude Code ignora timeout
+  assert.equal(nossa.url, undefined);
+  assert.match(nossa.command, /127\.0\.0\.1:7777\/hook\/claude/);
+  assert.equal(ehNosso({ type: 'http', url: 'http://127.0.0.1:7777/hook/claude', timeout: 2 }, 'claude'), true);
 });
 
 test('cursor: entradas diretas e version preservada', () => {
@@ -81,7 +122,7 @@ test('instalar grava com backup atômico e persiste a porta; desinstalar reverte
   assert.deepEqual(JSON.parse(readFileSync(r.backup, 'utf8')), { model: 'opus' });
   const gravado = JSON.parse(readFileSync(arquivo, 'utf8'));
   assert.equal(gravado.model, 'opus');
-  assert.equal(gravado.hooks.Stop[0].hooks[0].url, 'http://127.0.0.1:7800/hook/claude');
+  assert.match(gravado.hooks.Stop[0].hooks[0].command, /127\.0\.0\.1:7800\/hook\/claude/);
   assert.deepEqual(lerConfig(home), { porta: 7800, portaInstalada: 7800 });
   const antesConteudo = readFileSync(arquivo, 'utf8');
   const antesBaks = readdirSync(dirname(arquivo)).filter((n) => n.includes('.bak-'));
@@ -156,3 +197,67 @@ test('grok usa arquivo próprio: desinstalar remove o arquivo com backup', () =>
   assert.equal(desinstalar('grok', { home, agora }).alterado, false);
   assert.throws(() => instalar('emacs', { home, porta: 1, agora }), /cli desconhecida/);
 });
+
+// Ida e volta em disco por CLI (spec §7): instalar sobre vazio, sobre arquivo com hooks de
+// terceiros, reinstalar em outra porta, editar por fora e desinstalar, preservando tudo o que
+// não é nosso. claude e grok já têm os seus testes acima; aqui ficam codex, cursor e gemini.
+const FORMA = {
+  codex: { evento: 'PreToolUse', terceiro: { type: 'command', command: 'echo codex' } },
+  cursor: { evento: 'preToolUse', terceiro: { command: './meu.sh' } },
+  gemini: { evento: 'BeforeTool', terceiro: { type: 'command', command: 'echo gemini' } },
+};
+
+// Entradas de hook do evento, achatando os grupos ({ hooks: [...] }) das CLIs que os usam.
+const entradasDe = (cli, cfg, evento) => {
+  const lista = cfg.hooks?.[evento] ?? [];
+  return cli === 'cursor' ? lista : lista.flatMap((g) => g.hooks ?? []);
+};
+
+for (const [cli, { evento, terceiro }] of Object.entries(FORMA)) {
+  test(`${cli}: ida e volta em disco preserva hooks de terceiros e a edição feita por fora`, () => {
+    const home = casa();
+    const arquivo = arquivoDeHooks(cli, home);
+
+    // 1. instalar sobre vazio (arquivo inexistente)
+    const r1 = instalar(cli, { home, porta: 7777, agora });
+    assert.equal(r1.alterado, true);
+    assert.equal(r1.backup, undefined);
+    const vazio = JSON.parse(readFileSync(arquivo, 'utf8'));
+    assert.equal(entradasDe(cli, vazio, evento).filter((h) => ehNosso(h, cli)).length, 1);
+
+    // 2. instalar sobre arquivo com hooks de terceiros e outras chaves
+    const home2 = casa();
+    const arquivo2 = arquivoDeHooks(cli, home2);
+    mkdirSync(dirname(arquivo2), { recursive: true });
+    const original = cli === 'cursor'
+      ? { version: 1, outraChave: 'preservar', hooks: { [evento]: [terceiro] } }
+      : { outraChave: 'preservar', hooks: { [evento]: [{ matcher: 'X', hooks: [terceiro] }] } };
+    writeFileSync(arquivo2, JSON.stringify(original));
+    instalar(cli, { home: home2, porta: 7777, agora });
+    const comTerceiro = JSON.parse(readFileSync(arquivo2, 'utf8'));
+    assert.equal(comTerceiro.outraChave, 'preservar');
+    assert.deepEqual(entradasDe(cli, comTerceiro, evento).filter((h) => !ehNosso(h, cli)), [terceiro]);
+    assert.equal(entradasDe(cli, comTerceiro, evento).filter((h) => ehNosso(h, cli)).length, 1);
+
+    // 3. reinstalar com outra porta: continua uma única entrada nossa, agora na porta nova
+    instalar(cli, { home: home2, porta: 7800, agora });
+    const reinstalado = JSON.parse(readFileSync(arquivo2, 'utf8'));
+    const nossas = entradasDe(cli, reinstalado, evento).filter((h) => ehNosso(h, cli));
+    assert.equal(nossas.length, 1);
+    assert.match(JSON.stringify(nossas[0]), new RegExp(`127\\.0\\.0\\.1:7800/hook/${cli}`));
+    assert.deepEqual(entradasDe(cli, reinstalado, evento).filter((h) => !ehNosso(h, cli)), [terceiro]);
+
+    // 4. editar por fora (o usuário acrescenta um hook seu) e desinstalar
+    const editado = JSON.parse(readFileSync(arquivo2, 'utf8'));
+    const meu = cli === 'cursor' ? { command: './depois.sh' } : { type: 'command', command: 'echo depois' };
+    editado.hooks[evento].push(cli === 'cursor' ? meu : { hooks: [meu] });
+    writeFileSync(arquivo2, JSON.stringify(editado));
+    const d = desinstalar(cli, { home: home2, agora });
+    assert.equal(d.alterado, true);
+    assert.ok(existsSync(d.backup));
+    const final = JSON.parse(readFileSync(arquivo2, 'utf8'));
+    assert.equal(final.outraChave, 'preservar');
+    assert.deepEqual(entradasDe(cli, final, evento), [terceiro, meu]);
+    assert.equal(desinstalar(cli, { home: home2, agora }).alterado, false);
+  });
+}

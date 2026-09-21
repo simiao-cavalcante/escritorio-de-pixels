@@ -251,6 +251,11 @@ export function criarAplicacao({
     return new Promise((resolve, reject) => {
       servidor.once('error', reject);
       servidor.listen(porta, '127.0.0.1', () => {
+        // O `once('error', reject)` já cumpriu o seu papel (só vale até o listen): sem trocá-lo
+        // por um ouvinte permanente, qualquer erro posterior do servidor cairia num reject
+        // de promessa já resolvida, ou seja, no silêncio.
+        servidor.off('error', reject);
+        servidor.on('error', (e) => log(`erro no servidor: ${e.message}`));
         const real = servidor.address().port;
         hostsOk = new Set([`127.0.0.1:${real}`, `localhost:${real}`, `[::1]:${real}`]);
         origensOk = new Set([...hostsOk].map((h) => `http://${h}`));

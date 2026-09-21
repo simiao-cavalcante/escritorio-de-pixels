@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { SALAS, SALAS_EMBUTIDAS, validarConfigSalas, criarResolvedor, extrairSkill, carregarSalas } from '../src/salas.js';
 
 const padrao = () => criarResolvedor(validarConfigSalas(SALAS_EMBUTIDAS).config);
@@ -75,4 +76,9 @@ test('carregarSalas cai nas embutidas se o arquivo é inválido e recarrega quan
   assert.equal(salas.recarregar(), false);
   assert.equal(salas.resolverSala({ nome: 'Read' }), 'gabinete');
   salas.fechar();
+});
+
+test('salas.json do repositório é igual às regras embutidas (arquivo e código não podem divergir)', () => {
+  const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
+  assert.deepEqual(JSON.parse(readFileSync(join(raiz, 'salas.json'), 'utf8')), SALAS_EMBUTIDAS);
 });

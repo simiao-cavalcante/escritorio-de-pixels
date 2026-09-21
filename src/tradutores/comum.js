@@ -7,9 +7,14 @@ import { sep } from 'node:path';
 
 // Distingue a "grafia" do payload recebido: grok manda hookEventName (camel)
 // junto com hook_event_name (snake); os demais mandam só um dos dois formatos.
+// O valor de hookEventName do Grok é snake_case (`pre_tool_use`); o do Cursor é
+// camelCase (`preToolUse`). Sem essa distinção o payload do Cursor ia ao tradutor
+// do Grok, que devolve null, e a sessão do Cursor sumia.
+const EVENTO_SNAKE = /^[a-z0-9]+(_[a-z0-9]+)*$/;
+
 export function detectarEnvelope(p) {
   if (!p || typeof p !== 'object') return 'invalido';
-  if (typeof p.hookEventName === 'string') return 'grok';
+  if (typeof p.hookEventName === 'string' && EVENTO_SNAKE.test(p.hookEventName)) return 'grok';
   if (typeof p.hook_event_name === 'string') return 'snake';
   return 'camel';
 }
