@@ -40,6 +40,14 @@ export class Escritorio {
     if (!adv) adv = this._criarAdvogado(id, ev, agora, mudancas);
     this._atualizarMetadados(adv, ev);
 
+    const deEstagiario = Boolean(ev.agente) && (ev.tipo === 'ferramenta.inicio' || ev.tipo === 'ferramenta.fim');
+    if (deEstagiario) {
+      adv.ultimaAtividadeAgregada = agora;
+      this._aplicarEstagiario(adv, ev, agora, mudancas);
+      mudancas.push(this._deltaAdvogado(adv));
+      return mudancas;
+    }
+
     adv.ultimaAtividade = agora;
     adv.ultimaAtividadeAgregada = agora;
     adv.desatualizado = false;
@@ -79,6 +87,15 @@ export class Escritorio {
         break;
       case 'sessao.fim':
         this._sair(adv, agora);
+        break;
+      case 'tokens':
+        this._aplicarTokens(adv, ev.tokens);
+        break;
+      case 'subagente.inicio':
+        this._criarEstagiario(adv, ev.agente, agora, mudancas);
+        break;
+      case 'subagente.fim':
+        this._removerEstagiario(adv, `${adv.id}:${ev.agente.id}`, mudancas);
         break;
       default:
         break;
@@ -172,8 +189,87 @@ export class Escritorio {
     return ultima;
   }
 
-  _limparChamadas(adv) {
+  _limparChamadas(adv, mudancas) {
     adv.chamadasPendentes.clear();
+    for (const eid of adv.estagiarios) {
+      const est = this.estagiarios.get(eid);
+      if (est && est.chamadasPendentes.size) {
+        est.chamadasPendentes.clear();
+        est.estado = 'pensando';
+        mudancas.push(this._deltaEstagiario(est));
+      }
+    }
+  }
+
+  // ---------- estagiários ----------
+
+  _criarEstagiario(adv, agente, agora, mudancas) {
+    const id = `${adv.id}:${agente.id}`;
+    let est = this.estagiarios.get(id);
+    if (!est) {
+      if (adv.estagiarios.size >= this.limites.estagiariosPorSessao) {
+        const vitima = [...adv.estagiarios]
+          .map((i) => this.estagiarios.get(i))
+          .filter(Boolean)
+          .sort((a, b) => {
+            const pa = a.estado === 'pensando' ? 0 : 1;
+            const pb = b.estado === 'pensando' ? 0 : 1;
+            return pa - pb || a.ultimaAtividade - b.ultimaAtividade;
+          })[0];
+        if (vitima) this._removerEstagiario(adv, vitima.id, mudancas);
+      }
+      est = {
+        id, sessao: adv.id, tipo: agente.tipo, descricao: agente.descricao,
+        estado: 'pensando', sala: this.salaInicialEstagiario(agente.tipo),
+        chamadasPendentes: new Map(), ultimaAtividade: agora,
+      };
+      this.estagiarios.set(id, est);
+      adv.estagiarios.add(id);
+    } else {
+      if (agente.tipo) est.tipo = agente.tipo;
+      if (agente.descricao) est.descricao = agente.descricao;
+      est.ultimaAtividade = agora;
+    }
+    mudancas.push(this._deltaEstagiario(est));
+    return est;
+  }
+
+  _aplicarEstagiario(adv, ev, agora, mudancas) {
+    const id = `${adv.id}:${ev.agente.id}`;
+    const est = this.estagiarios.get(id) ?? this._criarEstagiario(adv, ev.agente, agora, mudancas);
+    est.ultimaAtividade = agora;
+    if (ev.tipo === 'ferramenta.inicio') {
+      this._abrirChamada(est, ev.ferramenta, this.limites.pendentesEstagiario);
+      est.estado = 'trabalhando';
+      est.sala = this.resolverSala(ev.ferramenta);
+    } else {
+      this._fecharChamada(est, ev.ferramenta);
+      const atual = this._ultimaChamada(est);
+      if (atual) est.sala = this.resolverSala(atual);
+      else est.estado = 'pensando';
+    }
+    mudancas.push(this._deltaEstagiario(est));
+  }
+
+  _removerEstagiario(adv, id, mudancas) {
+    if (!this.estagiarios.delete(id)) return;
+    adv.estagiarios.delete(id);
+    mudancas.push({ tipo: 'remover', entidade: 'estagiario', id });
+  }
+
+  // ---------- tokens ----------
+
+  _aplicarTokens(adv, t) {
+    if (t.contexto !== undefined) adv.tokens.contexto = t.contexto;
+    if (t.janela !== undefined) adv.tokens.janela = t.janela;
+    if (t.saidaTotal !== undefined) {
+      adv.tokens.saida = t.saidaTotal;
+      adv.tokens.saidaEstimada = false;
+    }
+    if (t.saidaIncremento !== undefined) {
+      adv.tokens.saida += t.saidaIncremento;
+      adv.tokens.saidaEstimada = true;
+    }
   }
 
   // ---------- serialização ----------
