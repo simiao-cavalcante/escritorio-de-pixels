@@ -1,7 +1,7 @@
 // HUD em DOM puro: barra superior, painel lateral e ficha do caso.
 // Todo texto vindo do servidor entra por textContent.
 
-import { agruparPorProjeto, contarPorCli, crachaDe, linhasDeSaude, formatarTokens, descreverAtividade, truncar, estagiariosDe } from './hud-util.js';
+import { agruparPorProjeto, contarPorCli, crachaDe, linhasDeSaude, formatarTokens, descreverAtividade, truncar, estagiariosDe, acoesParaFicha } from './hud-util.js';
 import { CORES } from './cores.js';
 
 // corDaSaude (hud-util) fala em verde/cinza/vermelho; a cor de fato mora em cores.js.
@@ -162,7 +162,7 @@ export function criarHud({ doc, raiz, i18n, painelAberto = true, aoTrocarIdioma 
 
     fichaCorpo.append(el(doc, 'h3', null, lingua.t('acoesRecentes')));
     const acoes = el(doc, 'ul', 'acoes');
-    const recentes = (advogado.acoesRecentes ?? []).slice(-8).reverse();
+    const recentes = acoesParaFicha(advogado);
     if (!recentes.length) acoes.append(el(doc, 'li', null, lingua.t('semAcoes')));
     for (const acao of recentes) acoes.append(el(doc, 'li', null, descreverAtividade(acao, 48) ?? acao.nome));
     fichaCorpo.append(acoes);
@@ -203,10 +203,12 @@ export function criarHud({ doc, raiz, i18n, painelAberto = true, aoTrocarIdioma 
   }
 
   function fecharFicha() {
+    const origem = selecionado; // linha que abriu a ficha: o foco volta para ela
     selecionado = null;
     ficha.hidden = true;
     fichaCorpo.replaceChildren();
     desenharPainel();
+    if (origem) lista.querySelector('[data-id="' + CSS.escape(origem) + '"]')?.focus();
   }
 
   function trocarIdioma(novo) {

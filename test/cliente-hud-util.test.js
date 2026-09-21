@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { truncar, agruparPorProjeto, contarPorCli, crachaDe, corDaSaude, linhasDeSaude, formatarTokens, descreverAtividade, estagiariosDe, escalaDaTela, CRACHA_PADRAO, LARGURA_PAINEL, ALTURA_BARRA } from '../public/hud-util.js';
+import { truncar, agruparPorProjeto, contarPorCli, crachaDe, corDaSaude, linhasDeSaude, formatarTokens, descreverAtividade, estagiariosDe, escalaDaTela, acoesParaFicha, CRACHA_PADRAO, LARGURA_PAINEL, ALTURA_BARRA } from '../public/hud-util.js';
 import { CORES } from '../public/cores.js';
 import { criarI18n } from '../public/i18n.js';
 
@@ -76,6 +76,15 @@ test('estagiariosDe filtra pelos ids do advogado', () => {
   assert.deepEqual(estagiariosDe(estado, { estagiarios: ['a1', 'b1'] }).map((e) => e.id), ['a1', 'b1']);
   assert.deepEqual(estagiariosDe(estado, { estagiarios: [] }), []);
   assert.deepEqual(estagiariosDe({}, undefined), []);
+});
+
+test('acoesParaFicha mantém a ordem do servidor (mais recente primeiro) e limita a 8', () => {
+  const a = { acoesRecentes: Array.from({ length: 10 }, (_, i) => ({ nome: `T${i}` })) };
+  assert.deepEqual(acoesParaFicha(a).map((x) => x.nome), ['T0', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']);
+  assert.deepEqual(acoesParaFicha({ acoesRecentes: [] }), []);
+  assert.deepEqual(acoesParaFicha({}), []);
+  assert.deepEqual(acoesParaFicha(undefined), []);
+  assert.equal(acoesParaFicha(a, 3).length, 3);
 });
 
 test('cores.js: todo cargo, sala, piso e estado de saúde tem cor hexadecimal, e nada muda em runtime', () => {

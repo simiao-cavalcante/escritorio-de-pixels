@@ -98,6 +98,11 @@ export function descreverAtividade(atividade, max = 24) {
   return detalhe ? `${atividade.nome} · ${detalhe}` : atividade.nome;
 }
 
+/** Ações para a ficha: o servidor já manda a mais recente primeiro; só limita a quantidade. */
+export function acoesParaFicha(advogado, max = 8) {
+  return (advogado?.acoesRecentes ?? []).slice(0, max);
+}
+
 export function estagiariosDe(estado, advogado) {
   const ids = new Set(advogado?.estagiarios ?? []);
   return (estado.estagiarios ?? []).filter((e) => ids.has(e.id));
