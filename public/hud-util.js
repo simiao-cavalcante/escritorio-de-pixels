@@ -110,12 +110,17 @@ export function estagiariosDe(estado, advogado) {
 
 /**
  * Escala do canvas para caber no que sobra da janela: sem a barra superior e, com o painel
- * aberto, sem a largura do painel. Pode ser menor que 1 (janela pequena encolhe a cena em vez
- * de cortá-la); o piso de 0,2 evita canvas de largura zero ou negativa.
+ * aberto, sem a largura do painel. Quando o escritório inteiro cabe pelo menos uma vez, a escala é
+ * um múltiplo inteiro (1, 2, 3…), para cada pixel lógico virar um bloco uniforme de pixels da tela.
+ * Só numa janela menor que o escritório (960x576 mais a barra) a escala fica fracionária, para
+ * mostrar a cena inteira menor em vez de cortá-la; o piso de 0,2 evita canvas de largura zero ou
+ * negativa.
  */
 export function escalaDaTela({ larguraJanela, alturaJanela, painelAberto = false }) {
   const largura = larguraJanela - (painelAberto ? LARGURA_PAINEL : 0);
   const altura = alturaJanela - ALTURA_BARRA;
   const escala = Math.min(largura / LARGURA, altura / ALTURA);
-  return Number.isFinite(escala) ? Math.max(0.2, escala) : 0.2;
+  if (!Number.isFinite(escala)) return 0.2;
+  if (escala >= 1) return Math.floor(escala);
+  return Math.max(0.2, escala);
 }
