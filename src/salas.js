@@ -70,13 +70,20 @@ export function extrairSkill(ferramenta) {
   return ferramenta.detalhe.split(/\s+/)[0];
 }
 
+// Regra de agentes: primeira regra de config.agentes cujo regex bate com o tipo do agente.
+function salaDoAgente(config, tipo) {
+  for (const r of config.agentes) if (r.re.test(tipo)) return r.sala;
+  return undefined;
+}
+
 export function criarResolvedor(config) {
   function resolverSala(ferramenta) {
     const skill = extrairSkill(ferramenta);
     if (skill) for (const r of config.skills) if (r.re.test(skill)) return r.sala;
     if (FERRAMENTAS_AGENTE.includes(ferramenta.nome) && ferramenta.detalhe) {
       const tipo = ferramenta.detalhe.split(':')[0];
-      for (const r of config.agentes) if (r.re.test(tipo)) return r.sala;
+      const sala = salaDoAgente(config, tipo);
+      if (sala) return sala;
     }
     if (ferramenta.detalhe) {
       for (const r of config.detalhe) if (r.ferramenta === ferramenta.nome && r.re.test(ferramenta.detalhe)) return r.sala;
@@ -87,7 +94,7 @@ export function criarResolvedor(config) {
     return config.padrao;
   }
   function salaInicialEstagiario(tipo) {
-    if (tipo) for (const r of config.agentes) if (r.re.test(tipo)) return r.sala;
+    if (tipo) return salaDoAgente(config, tipo) ?? 'reunioes';
     return 'reunioes';
   }
   return { resolverSala, salaInicialEstagiario };
@@ -120,8 +127,9 @@ export function carregarSalas(caminho, { aoErro = () => {}, watch = true } = {})
         clearTimeout(timer);
         timer = setTimeout(recarregar, 300);
       });
-    } catch {
-      /* arquivo ausente: segue com as regras embutidas */
+    } catch (e) {
+      if (e.code !== 'ENOENT') aoErro('não foi possível observar salas.json; recarga automática desligada');
+      /* arquivo ausente: segue com as regras embutidas, recarregar() já avisou */
     }
   }
   return {
