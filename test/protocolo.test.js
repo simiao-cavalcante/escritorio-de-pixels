@@ -75,11 +75,14 @@ test('normalizarLote aceita objeto ou array e separa rejeitados por índice', ()
   assert.equal(TIPOS.length, 10);
 });
 
-test('cwd é truncado em 256 caracteres, como os demais textos livres', () => {
+test('cwd é cortado em 256 caracteres sem colapsar espaços internos (é identidade, não texto livre)', () => {
   const longo = `/x/${'a'.repeat(400)}`;
   const r = normalizarEvento({ ...base, tipo: 'sessao.inicio', cwd: longo }, agora);
   assert.equal(r.ok, true);
   assert.equal(r.evento.cwd.length, 256);
-  assert.ok(r.evento.cwd.endsWith('…'));
+  assert.equal(r.evento.cwd, longo.slice(0, 256)); // corte cru, sem "…" (cwd não é exibido)
   assert.equal(normalizarEvento({ ...base, tipo: 'sessao.inicio', cwd: '   ' }, agora).evento.cwd, undefined);
+  // dois espaços consecutivos são parte do caminho: `truncar` colapsaria para um só e dois
+  // diretórios diferentes ("/x/a  b" e "/x/a b") ficariam com o mesmo cwd.
+  assert.equal(normalizarEvento({ ...base, tipo: 'sessao.inicio', cwd: '/x/a  b' }, agora).evento.cwd, '/x/a  b');
 });

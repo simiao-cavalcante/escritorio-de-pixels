@@ -16,9 +16,16 @@ import { homedir, userInfo } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 // turn_id: o Codex manda o id do turno em todo evento, e é um UUID real como os demais.
+// Nota: a garantia de apelido só vale para ids declarados sob uma destas chaves; um id que
+// apareça solto no meio de um texto (sem estar guardado numa chave de sessão) não é
+// reconhecido e sai sem apelido na fixture.
 const CHAVES_SESSAO = new Set(['session_id', 'sessionId', 'conversation_id', 'conversationId', 'thread_id', 'promptId', 'prompt_id', 'generation_id', 'turn_id', 'turnId']);
 
 // Padrões que forçam redação: não dá para confiar no corte por tamanho para esconder segredo.
+// Lista de negação, não positiva: cobre só os formatos vistos até aqui (chave da OpenAI, da
+// xAI, cabeçalho Bearer, e-mail). Token de outro formato (ghp_ do GitHub, AKIA da AWS, AIza
+// do Google, bloco PEM) passa batido — a revisão humana da fixture antes do `git add` continua
+// obrigatória.
 const PROIBIDOS = [
   /sk-[A-Za-z0-9_-]+/g,
   /xai-[A-Za-z0-9_-]+/g,
@@ -60,6 +67,9 @@ function sessoesPorCaminho(valor, chave = '', caminho = '', saida = new Map()) {
   return saida;
 }
 
+// Escapa metacaracteres de regex para usar `usuario` (texto livre) dentro de um RegExp.
+const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 function limparTexto(texto, { home, usuario, apelidos }) {
   let t = texto;
   if (home) t = t.split(home).join('/home/u');
@@ -67,6 +77,12 @@ function limparTexto(texto, { home, usuario, apelidos }) {
   // ("jo") apareceria dentro de palavras comuns ("jogar").
   if (usuario && usuario.length >= 3) {
     t = t.split(`/Users/${usuario}`).join('/home/u').split(`/home/${usuario}`).join('/home/u');
+  }
+  // Fora de caminho o nome também vaza (ex.: `ls -l` devolve o dono do arquivo no stdout de
+  // uma ferramenta). Troca por limite de palavra, com guarda maior (4+) que a do caminho:
+  // um nome de 3 caracteres solto no meio do texto tem chance real de ser palavra comum.
+  if (usuario && usuario.length >= 4) {
+    t = t.replace(new RegExp(`\\b${escapar(usuario)}\\b`, 'g'), 'u');
   }
   for (const [real, apelido] of apelidos) {
     if (real.length >= MIN_ID_EM_SUBSTRING) t = t.split(real).join(apelido);
@@ -80,7 +96,10 @@ function limpar(valor, ctx) {
   if (typeof valor === 'string') return limparTexto(valor, ctx);
   if (Array.isArray(valor)) return valor.slice(0, MAX_ITENS).map((v) => limpar(v, ctx));
   if (valor && typeof valor === 'object') {
-    const saida = {};
+    // Object.create(null): um bruto com a chave literal "__proto__" (JSON.parse cria como
+    // propriedade própria) não pode, aqui, reatribuir o protótipo de `saida` nem sumir
+    // silenciosamente — um `{}` comum faria as duas coisas, dependendo do valor.
+    const saida = Object.create(null);
     for (const [k, v] of Object.entries(valor)) saida[k] = limpar(v, ctx);
     return saida;
   }

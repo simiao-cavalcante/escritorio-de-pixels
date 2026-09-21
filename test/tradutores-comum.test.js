@@ -14,7 +14,11 @@ test('detectarEnvelope distingue grok, snake e camel', () => {
 
 test('só é envelope do Grok quando hookEventName é snake_case (camelCase é do Cursor)', () => {
   assert.equal(detectarEnvelope({ hookEventName: 'pre_tool_use' }), 'grok');
-  assert.equal(detectarEnvelope({ hookEventName: 'stop' }), 'grok');
+  // 'stop' é uma palavra única minúscula: EVENTO_SNAKE casa, mas isso também é camelCase
+  // válido de uma única palavra — exatamente o que o Cursor manda. Sem outro sinal (um "_"
+  // no valor, ou a assinatura dupla hook_event_name do Grok), não dá para saber de quem é.
+  assert.equal(detectarEnvelope({ hookEventName: 'stop' }), 'camel');
+  assert.equal(detectarEnvelope({ hookEventName: 'stop', hook_event_name: 'Stop' }), 'grok');
   assert.equal(detectarEnvelope({ hookEventName: 'preToolUse' }), 'camel');
   assert.equal(detectarEnvelope({ hookEventName: 'sessionStart' }), 'camel');
   // camelCase com hook_event_name junto continua sendo o envelope snake

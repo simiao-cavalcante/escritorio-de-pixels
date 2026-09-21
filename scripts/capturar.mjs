@@ -10,26 +10,53 @@
 // sessão sua (outro projeto aberto na mesma CLI) são descartados em vez de gravados.
 import { createServer } from 'node:http';
 import { mkdirSync, writeFileSync, readdirSync, realpathSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { lerConfig } from '../src/config.js';
 
 const CHAVES_CWD = ['cwd', 'workspaceRoot', 'workspace_root'];
 
+// `--cwd` sem valor e `--porta` que não é inteiro degradavam para o modo aberto (porta
+// vira NaN, `.listen(NaN, ...)` escuta a porta padrão do SO; prefixo vira undefined e
+// grava tudo). Melhor recusar já na leitura dos argumentos do que gravar sessão alheia.
 export function lerArgsCaptura(argv) {
   const a = { porta: undefined, prefixoCwd: undefined };
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--porta') {
-      a.porta = Number(argv[i + 1]);
+      const valor = argv[i + 1];
+      if (!/^\d+$/.test(valor ?? '')) throw new Error(`--porta precisa de um número inteiro (recebido: ${valor ?? '(nada)'})`);
+      a.porta = Number(valor);
       i += 1;
     } else if (argv[i] === '--cwd') {
-      a.prefixoCwd = argv[i + 1];
+      const valor = argv[i + 1];
+      if (valor === undefined) throw new Error('--cwd precisa de um caminho');
+      a.prefixoCwd = valor;
       i += 1;
     } else if (/^\d+$/.test(argv[i])) {
       a.porta = Number(argv[i]); // forma antiga: `capturar.mjs 7777`
     }
   }
   return a;
+}
+
+// Caminho real de `caminho` (resolve `..`, espaços e symlinks) quando ele existe em disco;
+// senão devolve o caminho só normalizado (`path.resolve`) — não dá para exigir que o cwd de
+// um payload de hook aponte para um diretório que ainda existe no momento da captura.
+function caminhoReal(caminho) {
+  const resolvido = resolve(caminho);
+  try {
+    return realpathSync(resolvido);
+  } catch {
+    return resolvido;
+  }
+}
+
+// `cwd` está dentro do prefixo quando é igual a ele ou quando começa por ele + separador:
+// um `startsWith` puro deixa `/tmp/proj-do-vizinho` passar pelo filtro `--cwd /tmp/proj`.
+function dentroDoPrefixo(cwd, prefixoResolvido) {
+  if (!cwd) return false;
+  const cwdResolvido = caminhoReal(cwd);
+  return cwdResolvido === prefixoResolvido || cwdResolvido.startsWith(prefixoResolvido + sep);
 }
 
 // Diretório de trabalho declarado pelo payload, nas grafias das CLIs suportadas.
@@ -52,6 +79,7 @@ function ultimoNumero(dir) {
 
 export function criarServidorDeCaptura({ raiz, prefixoCwd, log = (m) => process.stdout.write(`${m}\n`) } = {}) {
   const contadores = new Map();
+  const prefixoResolvido = prefixoCwd ? caminhoReal(prefixoCwd) : undefined;
   if (!prefixoCwd) log('aviso: sem --cwd <prefixo>, TODA sessão que chegar é gravada, inclusive de outros projetos seus');
   return createServer((req, res) => {
     const fim = () => { res.writeHead(204); res.end(); };
@@ -70,7 +98,7 @@ export function criarServidorDeCaptura({ raiz, prefixoCwd, log = (m) => process.
         evento = String(payload.hookEventName ?? payload.hook_event_name ?? payload.event ?? 'desconhecido').replace(/[^A-Za-z_]/g, '');
       } catch { /* grava assim mesmo */ }
       const cwd = cwdDo(payload);
-      if (prefixoCwd && !(cwd ?? '').startsWith(prefixoCwd)) {
+      if (prefixoResolvido && !dentroDoPrefixo(cwd, prefixoResolvido)) {
         log(`${cli} ${evento} descartado (cwd ${cwd ?? 'ausente'} fora de ${prefixoCwd})`);
         return fim();
       }
@@ -97,12 +125,17 @@ const ehPrincipal = (() => {
 })();
 
 if (ehPrincipal) {
-  const args = lerArgsCaptura(process.argv.slice(2));
-  const porta = args.porta ?? lerConfig().porta;
-  const raiz = join(process.cwd(), 'test', 'fixtures', 'brutos');
-  criarServidorDeCaptura({ raiz, prefixoCwd: args.prefixoCwd })
-    .listen(porta, '127.0.0.1', function aoSubir() {
-      process.stdout.write(`capturando em http://127.0.0.1:${this.address().port}/hook/<cli> (Ctrl+C para sair)\n`);
-      process.stdout.write(`brutos em ${raiz} — esvazie a pasta ao terminar\n`);
-    });
+  try {
+    const args = lerArgsCaptura(process.argv.slice(2));
+    const porta = args.porta ?? lerConfig().porta;
+    const raiz = join(process.cwd(), 'test', 'fixtures', 'brutos');
+    criarServidorDeCaptura({ raiz, prefixoCwd: args.prefixoCwd })
+      .listen(porta, '127.0.0.1', function aoSubir() {
+        process.stdout.write(`capturando em http://127.0.0.1:${this.address().port}/hook/<cli> (Ctrl+C para sair)\n`);
+        process.stdout.write(`brutos em ${raiz} — esvazie a pasta ao terminar\n`);
+      });
+  } catch (e) {
+    process.stderr.write(`${e.message}\n`);
+    process.exit(2);
+  }
 }

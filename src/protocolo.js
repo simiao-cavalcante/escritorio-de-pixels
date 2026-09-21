@@ -21,6 +21,16 @@ function textoOpcional(v, max) {
   return typeof v === 'string' && v.length ? truncar(v, max) : undefined;
 }
 
+// cwd é a identidade do projeto (não texto livre pra exibição): corta sem colapsar espaços
+// internos, porque `truncar` normaliza whitespace e dois diretórios que só diferem por
+// espaços consecutivos ("/x/a  b" e "/x/a b") colidiriam no mesmo cwd. `trim()` entra só
+// para decidir se está vazio (cwd só de espaços continua contando como ausente); o corte
+// em si preserva o texto original, sem o "…" de `truncar` (cwd não é pra exibição).
+function cwdOpcional(v) {
+  if (typeof v !== 'string' || !v.trim().length) return undefined;
+  return v.length > 256 ? v.slice(0, 256) : v;
+}
+
 function numeroOpcional(v) {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : undefined;
 }
@@ -50,7 +60,7 @@ export function normalizarEvento(bruto, agora = () => Date.now()) {
   }
 
   const evento = { v: 1, tipo: bruto.tipo, cli: bruto.cli, sessao: bruto.sessao, ts };
-  const cwd = textoOpcional(bruto.cwd, 256); // caminho vem da CLI: entra truncado como os demais textos
+  const cwd = cwdOpcional(bruto.cwd);
   if (cwd) evento.cwd = cwd;
   const projeto = textoOpcional(bruto.projeto, 80);
   if (projeto) evento.projeto = projeto;

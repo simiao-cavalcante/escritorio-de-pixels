@@ -14,7 +14,12 @@ const EVENTO_SNAKE = /^[a-z0-9]+(_[a-z0-9]+)*$/;
 
 export function detectarEnvelope(p) {
   if (!p || typeof p !== 'object') return 'invalido';
-  if (typeof p.hookEventName === 'string' && EVENTO_SNAKE.test(p.hookEventName)) return 'grok';
+  const snakeCasado = typeof p.hookEventName === 'string' && EVENTO_SNAKE.test(p.hookEventName);
+  // EVENTO_SNAKE também casa uma palavra única em minúsculas ("stop"), que é igualmente
+  // válida em camelCase — e é exatamente o que o Cursor manda. Só é do Grok quando o valor
+  // tem "_" (inequívoco) ou o payload também trouxe hook_event_name (a assinatura dupla do
+  // Grok); senão um "stop" do Cursor ia parar no tradutor do Grok e virava advogado fantasma.
+  if (snakeCasado && (p.hookEventName.includes('_') || typeof p.hook_event_name === 'string')) return 'grok';
   if (typeof p.hook_event_name === 'string') return 'snake';
   return 'camel';
 }
