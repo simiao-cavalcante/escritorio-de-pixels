@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   SALAS, ORDEM_SALAS, NOS, ARESTAS, COLUNAS, LINHAS, LARGURA, ALTURA,
   noDaSala, caminhoEntreNos, noMaisProximo, salaEm, ehParede, ehPorta, tipoDePiso, posicaoJuntoAPorta, postosDaSala,
@@ -154,5 +155,29 @@ test('posicaoJuntoAPorta percorre só o interior livre: distinta, dentro da sala
       vistos.add(chave);
     }
     assert.deepEqual(posicaoJuntoAPorta(id, livres), posicaoJuntoAPorta(id, 0), `${id}: índice não dá a volta ao esgotar o interior livre`);
+  }
+});
+
+test('móveis de 64 px (mesa, quadro) não se sobrepõem a nenhum outro móvel da sala, com os tamanhos do atlas', () => {
+  const atlas = JSON.parse(readFileSync(new URL('../public/arte/atlas.json', import.meta.url), 'utf8'));
+  const tamanho = new Map(atlas.map((q) => [q.id, { w: q.w, h: q.h }]));
+  // Mesma âncora do render: centro da base do sprite no centro da base do tile.
+  const caixa = (m) => {
+    const { w, h } = tamanho.get(m.sprite);
+    const x = (m.x + 0.5) * 32 - w / 2;
+    const y = (m.y + 1) * 32 - h;
+    return { sprite: m.sprite, x0: x, x1: x + w, y0: y, y1: y + h, w };
+  };
+  const cruzam = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+  for (const s of Object.values(SALAS)) {
+    const moveis = [...s.decoracao, ...s.postos.filter((p) => p.movel).map((p) => p.movel)].map(caixa);
+    for (let i = 0; i < moveis.length; i += 1) {
+      for (let j = i + 1; j < moveis.length; j += 1) {
+        const a = moveis[i];
+        const b = moveis[j];
+        if (a.w !== 64 && b.w !== 64) continue;
+        assert.equal(cruzam(a, b), false, `${s.id}: ${a.sprite} (${a.x0}..${a.x1}) sobrepõe ${b.sprite} (${b.x0}..${b.x1})`);
+      }
+    }
   }
 });

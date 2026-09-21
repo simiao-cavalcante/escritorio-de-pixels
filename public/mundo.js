@@ -19,22 +19,23 @@ export const SALAS = Object.freeze({
   copa: {
     id: 'copa', x0: 9, y0: 0, x1: 20, y1: 5, piso: 'piso-madeira', porta: { x: 14, y: 5 },
     postos: [posto(12, 3, null), posto(14, 3, null), posto(16, 3, null)],
-    decoracao: [movel('movel-cafe', 11, 2), movel('movel-planta', 18, 2), movel('movel-planta', 18, 4), movel('movel-quadro', 10, 1)],
+    decoracao: [movel('movel-cafe', 12, 2), movel('movel-planta', 18, 2), movel('movel-planta', 18, 4), movel('movel-quadro', 10, 1)],
   },
   revisao: {
     id: 'revisao', x0: 21, y0: 0, x1: 29, y1: 6, piso: 'piso-carpete', porta: { x: 25, y: 6 },
-    postos: [posto(23, 3, 'movel-mesa'), posto(25, 3, 'movel-mesa'), posto(27, 3, 'movel-mesa')],
+    postos: [posto(23, 4, 'movel-mesa'), posto(25, 4, 'movel-mesa'), posto(27, 4, 'movel-mesa')], // mesas na linha 3: a linha 1 fica livre para o quadro
     decoracao: [movel('movel-quadro', 22, 1), movel('movel-arquivo', 28, 1), movel('movel-planta', 28, 5)],
   },
   biblioteca: {
     id: 'biblioteca', x0: 0, y0: 9, x1: 6, y1: 17, piso: 'piso-carpete', porta: { x: 6, y: 12 },
     postos: [posto(2, 11, 'movel-mesa'), posto(4, 11, 'movel-mesa'), posto(2, 14, 'movel-mesa'), posto(4, 14, 'movel-mesa')],
-    decoracao: [movel('movel-estante', 1, 10), movel('movel-estante', 5, 10), movel('movel-estante', 1, 16), movel('movel-planta', 5, 16)],
+    decoracao: [movel('movel-estante', 1, 16), movel('movel-planta', 3, 16), movel('movel-estante', 5, 16)], // estantes na parede do fundo, longe das mesas de 64 px
   },
   gabinete: {
     id: 'gabinete', x0: 22, y0: 9, x1: 29, y1: 13, piso: 'piso-carpete', porta: { x: 22, y: 11 },
-    postos: [posto(23, 11, 'movel-mesa'), posto(24, 11, 'movel-mesa'), posto(26, 11, 'movel-mesa'), posto(27, 11, 'movel-mesa')],
-    decoracao: [movel('movel-estante', 28, 10), movel('movel-planta', 28, 12), movel('movel-arquivo', 23, 12)],
+    // Mesas de 64 px cobrem meio tile de cada lado: postos com mesa a 2 tiles; o 4º posto é uma cadeira de leitura.
+    postos: [posto(23, 11, 'movel-mesa'), posto(25, 11, 'movel-mesa'), posto(27, 11, 'movel-mesa'), posto(24, 12, 'movel-cadeira', 24, 12)],
+    decoracao: [movel('movel-arquivo', 23, 12), movel('movel-planta', 26, 12), movel('movel-estante', 28, 12)],
   },
   recepcao: {
     id: 'recepcao', x0: 9, y0: 11, x1: 19, y1: 17, piso: 'piso-tapete', porta: { x: 14, y: 11 },
@@ -42,7 +43,7 @@ export const SALAS = Object.freeze({
       posto(11, 13, 'movel-balcao'), posto(13, 13, 'movel-balcao'), posto(15, 13, 'movel-balcao'), posto(17, 13, 'movel-balcao'),
       posto(12, 15, 'movel-cadeira', 12, 16), posto(16, 15, 'movel-cadeira', 16, 16),
     ],
-    decoracao: [movel('movel-planta', 10, 16), movel('movel-planta', 18, 16), movel('movel-quadro', 10, 12)],
+    decoracao: [movel('movel-planta', 10, 16), movel('movel-planta', 18, 16)], // sem quadro: os balcões de 96 px ocupam a parede do fundo
   },
   cartorio: {
     id: 'cartorio', x0: 22, y0: 14, x1: 29, y1: 17, piso: 'piso-carpete', porta: { x: 22, y: 15 },
