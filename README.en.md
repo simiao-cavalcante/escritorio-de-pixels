@@ -74,7 +74,7 @@ else, writes a backup and saves atomically. `desinstalar` undoes it.
 | Claude Code | yes | yes | yes | yes | at start | estimated | yes |
 | Codex | yes | yes | yes | yes | every event | totals | yes |
 | Grok | yes | yes | yes | yes | no | no | yes |
-| Cursor Agent | yes | yes | yes | yes | payload dependent | no | no (see Pendências) |
+| Cursor Agent | yes | yes | yes | yes | payload dependent | no | no ([see "Pendências"](docs/adaptadores.md#pendências)) |
 | Gemini CLI | yes | yes | yes | no | in `AfterModel` | in `AfterModel` | no |
 | OpenCode | — | — | — | — | — | — | no (v1.1, via `opencode serve`) |
 
@@ -93,7 +93,7 @@ reloads it; an invalid file is rejected and the previous one stays in force).
 | Room | Phase | What lands here |
 | --- | --- | --- |
 | `recepcao` (reception) | waiting and thinking | idle, between turns, tool with no rule |
-| `biblioteca` (library) | research | `Read`, `Grep`, `Glob`, `WebSearch`, `WebFetch` |
+| `biblioteca` (library) | research | `Read`, `Grep`, `Glob`, `WebSearch`, `WebFetch`, general search |
 | `gabinete` (office) | drafting | `Edit`, `Write`, `apply_patch`, writing skills |
 | `revisao` (review) | review | review subagents, `code-review`, `security-review` |
 | `cartorio` (registry) | filing and chores | `Bash`, `shell`, `run_terminal_cmd` |
@@ -122,8 +122,8 @@ Ranks come from the model, through rules in `cargos.json`:
   are truncated on ingestion (200/120/120 characters) and only those summaries stay in
   memory.
 - Transcripts: only the CLI's own directory is read (`~/.claude/projects/`,
-  `~/.codex/sessions/`), at most the last 64 KB, and only to estimate tokens. Turn it off
-  with `--sem-transcritos`.
+  `~/.codex/sessions/`, `~/.codex/archived_sessions/`), at most the last 64 KB, and only to
+  estimate tokens. Turn it off with `--sem-transcritos`.
 - The only writes are configuration: `~/.escritorio-de-pixels/config.json`, the hook files
   and their backups, and language/panel preferences in `localStorage`.
 - Sharing your screen? Use `--ocultar-prompts`.

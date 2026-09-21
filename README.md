@@ -15,7 +15,7 @@ pareceres.
 - Funciona com **Claude Code, Codex e Grok CLI** (testados nesta máquina, com fixtures
   reais e aceite ponta a ponta), **Cursor Agent** (instalador pronto e formato confirmado
   pela skill oficial, mas os hooks não dispararam nesta máquina — não validado ponta a
-  ponta), **Gemini CLI** (documentado pela documentação oficial, sem teste local) e
+  ponta), **Gemini CLI** (documentado a partir da documentação oficial, sem teste local) e
   qualquer ferramenta que fale o [protocolo v1](docs/protocolo.md).
 - A sala indica a **fase provável** do trabalho, inferida da ferramenta usada — é uma
   aproximação, não um oráculo.
@@ -72,7 +72,7 @@ resto, grava um backup e escreve de forma atômica. `desinstalar` desfaz.
 | Claude Code | sim | sim | sim | sim | no início | estimados | sim |
 | Codex | sim | sim | sim | sim | em todo evento | totais | sim |
 | Grok | sim | sim | sim | sim | não | não | sim |
-| Cursor Agent | sim | sim | sim | sim | conforme o payload | não | não (ver Pendências) |
+| Cursor Agent | sim | sim | sim | sim | conforme o payload | não | não ([ver Pendências](docs/adaptadores.md#pendências)) |
 | Gemini CLI | sim | sim | sim | não | em `AfterModel` | em `AfterModel` | não |
 | OpenCode | — | — | — | — | — | — | não (v1.1, via `opencode serve`) |
 
@@ -121,8 +121,8 @@ estagiários.
   descrição do subagente são truncados na ingestão (200/120/120 caracteres) e só esses
   resumos ficam em memória.
 - Transcritos: só são lidos os do diretório da própria CLI (`~/.claude/projects/`,
-  `~/.codex/sessions/`), no máximo 64 KB do final, e só para estimar tokens. Desligue com
-  `--sem-transcritos`.
+  `~/.codex/sessions/`, `~/.codex/archived_sessions/`), no máximo 64 KB do final, e só para
+  estimar tokens. Desligue com `--sem-transcritos`.
 - As únicas gravações são de configuração: `~/.escritorio-de-pixels/config.json`, os
   arquivos de hooks e seus backups, e as preferências de idioma e painel no `localStorage`.
 - Vai compartilhar a tela? Use `--ocultar-prompts`.
