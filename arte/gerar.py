@@ -7,8 +7,10 @@ Uso:
   python3 arte/gerar.py --so personagem-socio-a  gera um asset só
   python3 arte/gerar.py --forcar               regera mesmo com o hash igual
   python3 arte/gerar.py --modelo gpt-image-2.5-sunburst
+  python3 arte/gerar.py --brutos /tmp/brutos --paralelo 4   guarda as imagens cruas; 4 chamadas por vez
+  python3 arte/gerar.py --de-brutos /tmp/brutos --forcar    só repete o pós-processamento (sem API)
 
-Precisa de OPENAI_API_KEY no ambiente (menos com --seco).
+Precisa de OPENAI_API_KEY no ambiente (menos com --seco e --de-brutos).
 """
 import argparse
 import base64
@@ -26,8 +28,11 @@ RAIZ = Path(__file__).resolve().parent.parent
 MANIFESTO = RAIZ / "arte" / "manifesto.json"
 SAIDA = RAIZ / "public" / "arte"
 ATLAS = SAIDA / "atlas.json"
-TAMANHO_API = "1024x1024"
-QUALIDADE = "medium"
+QUALIDADE = "high"
+# Tamanhos que a API aceita; escolhido pela proporção do alvo (ver tamanho_api).
+TAMANHO_QUADRADO = "1024x1024"
+TAMANHO_LARGO = "1536x1024"
+TAMANHO_ALTO = "1024x1536"
 
 
 # ------------------------------------------------------------------ manifesto
@@ -42,10 +47,23 @@ def texto_do_prompt(manifesto, asset):
     return f"{manifesto['preambulos'][asset['categoria']]}. {asset['prompt']}."
 
 
-def hash_do_asset(modelo, preambulo, asset):
-    """Identidade do asset: muda se modelo, preâmbulo, prompt ou tamanho mudarem."""
-    semente = f"{modelo}{preambulo}{asset['prompt']}{asset['w']}x{asset['h']}"
+def hash_do_asset(modelo, preambulo, asset, qualidade=QUALIDADE):
+    """Identidade do asset: muda se modelo, preâmbulo, prompt, tamanho ou qualidade mudarem.
+    O tamanho pedido à API deriva de w x h (tamanho_api), então já está coberto."""
+    semente = f"{modelo}{preambulo}{asset['prompt']}{asset['w']}x{asset['h']}{qualidade}"
     return hashlib.sha256(semente.encode("utf-8")).hexdigest()[:12]
+
+
+def tamanho_api(asset):
+    """Quadro de geração com a proporção mais próxima do alvo, para o recorte proporcional
+    desperdiçar menos: largos (96x48, 64x48, 64x32) em 1536x1024, altos (32x48, 32x64) em
+    1024x1536, quadrados (32x32) em 1024x1024."""
+    razao = asset["w"] / asset["h"]
+    if razao >= 1.25:
+        return TAMANHO_LARGO
+    if razao <= 0.8:
+        return TAMANHO_ALTO
+    return TAMANHO_QUADRADO
 
 
 # ---------------------------------------------------------------------- atlas
@@ -119,9 +137,10 @@ def processar(img, asset, paleta=None):
 
 # ------------------------------------------------------------------------ API
 
-def gerar_imagem(modelo, texto, categoria):
-    """Chama a API de imagens e devolve o PNG como Image. Importa openai só aqui, para
-    que --seco e os testes rodem sem o pacote."""
+def gerar_imagem(modelo, texto, categoria, tamanho=TAMANHO_QUADRADO, qualidade=QUALIDADE):
+    """Chama a API de imagens e devolve (Image, uso). `uso` é o dicionário de tokens que a API
+    informa (ou {}), para estimar custo. Importa openai só aqui, para que --seco e os testes
+    rodem sem o pacote."""
     from openai import OpenAI
 
     cliente = OpenAI()
@@ -129,15 +148,38 @@ def gerar_imagem(modelo, texto, categoria):
         model=modelo,
         prompt=texto,
         n=1,
-        size=TAMANHO_API,
-        quality=QUALIDADE,
+        size=tamanho,
+        quality=qualidade,
         background="opaque" if categoria == "piso" else "transparent",
         output_format="png",
     )
-    return Image.open(io.BytesIO(base64.b64decode(resposta.data[0].b64_json)))
+    uso = resposta.usage.model_dump() if getattr(resposta, "usage", None) else {}
+    return Image.open(io.BytesIO(base64.b64decode(resposta.data[0].b64_json))), uso
 
 
 # ------------------------------------------------------------------------ CLI
+
+def obter_bruta(asset, texto, modelo, args):
+    """Imagem crua do asset: da pasta --de-brutos (sem rede) ou da API (gravando em --brutos)."""
+    nome = f"{asset['id']}.png"
+    if args.de_brutos:
+        return Image.open(Path(args.de_brutos) / nome), {}
+    bruta, uso = gerar_imagem(modelo, texto, asset["categoria"], tamanho_api(asset))
+    if args.brutos:
+        pasta = Path(args.brutos)
+        pasta.mkdir(parents=True, exist_ok=True)
+        bruta.save(pasta / nome, format="PNG")
+    return bruta, uso
+
+
+def produzir(asset, texto, modelo, args, paleta):
+    """Gera (ou relê) a imagem crua e grava o PNG final. Devolve o uso de tokens da API."""
+    bruta, uso = obter_bruta(asset, texto, modelo, args)
+    final = processar(bruta, asset, paleta)
+    SAIDA.mkdir(parents=True, exist_ok=True)
+    final.save(SAIDA / f"{asset['id']}.png", format="PNG", optimize=True)
+    return uso
+
 
 def principal(argv=None):
     ap = argparse.ArgumentParser(description="Gera a arte do Escritório de Pixels.")
@@ -145,6 +187,10 @@ def principal(argv=None):
     ap.add_argument("--so", metavar="ID", help="gera só este asset")
     ap.add_argument("--forcar", action="store_true", help="regera mesmo com o hash igual")
     ap.add_argument("--seco", action="store_true", help="só imprime os prompts; não chama a API")
+    ap.add_argument("--brutos", metavar="DIR", help="guarda a imagem crua da API nesta pasta")
+    ap.add_argument("--de-brutos", metavar="DIR", dest="de_brutos",
+                    help="reprocessa a partir das imagens cruas desta pasta, sem chamar a API")
+    ap.add_argument("--paralelo", type=int, default=1, metavar="N", help="chamadas simultâneas à API")
     args = ap.parse_args(argv)
 
     manifesto = carregar_manifesto()
@@ -166,27 +212,36 @@ def principal(argv=None):
     atlas = carregar_atlas()
     paleta = imagem_paleta()
     gerados, pulados, falhas = [], [], []
+    uso_total = {}
+    pendentes = []
 
     for asset in assets:
         preambulo = manifesto["preambulos"][asset["categoria"]]
         texto = texto_do_prompt(manifesto, asset)
         digest = hash_do_asset(modelo, preambulo, asset)
         if args.seco:
-            print(f"{asset['id']} [{asset['categoria']} {asset['w']}x{asset['h']} {digest}] {texto}")
+            print(f"{asset['id']} [{asset['categoria']} {asset['w']}x{asset['h']} {tamanho_api(asset)} {digest}] {texto}")
             continue
         atual = atlas.get(asset["id"])
         pronto = atual and atual.get("hash") == digest and (SAIDA / f"{asset['id']}.png").exists()
         if pronto and not args.forcar:
             pulados.append(asset["id"])
             continue
-        try:
-            bruta = gerar_imagem(modelo, texto, asset["categoria"])
-            final = processar(bruta, asset, paleta)
-            SAIDA.mkdir(parents=True, exist_ok=True)
-            final.save(SAIDA / f"{asset['id']}.png", format="PNG", optimize=True)
-        except Exception as erro:  # uma falha não derruba o lote inteiro
-            falhas.append((asset["id"], f"{type(erro).__name__}: {erro}"))
-            continue
+        pendentes.append((asset, texto, digest))
+
+    if args.seco:
+        print(f"{len(assets)} prompts (modelo {modelo}, {QUALIDADE}); nada foi gerado", file=sys.stderr)
+        return 0
+
+    def concluir(asset, digest, resultado):
+        """Registra o resultado no atlas (só no fio principal) e grava a cada sucesso: um lote
+        interrompido não perde o progresso."""
+        if isinstance(resultado, BaseException):
+            falhas.append((asset["id"], f"{type(resultado).__name__}: {resultado}"))
+            return
+        for chave, valor in resultado.items():
+            if isinstance(valor, (int, float)):
+                uso_total[chave] = uso_total.get(chave, 0) + valor
         atlas[asset["id"]] = {
             "id": asset["id"],
             "arquivo": f"{asset['id']}.png",
@@ -197,14 +252,31 @@ def principal(argv=None):
             "hash": digest,
         }
         gerados.append(asset["id"])
-        gravar_atlas(atlas)  # grava a cada sucesso: um lote interrompido não perde o progresso
+        gravar_atlas(atlas)
+        print(f"  ok {asset['id']} {resultado or ''}".rstrip(), file=sys.stderr)
 
-    if args.seco:
-        print(f"{len(assets)} prompts (modelo {modelo}); nada foi gerado", file=sys.stderr)
-        return 0
+    def tentar(asset, texto):
+        try:
+            return produzir(asset, texto, modelo, args, paleta)
+        except Exception as erro:  # uma falha não derruba o lote inteiro
+            return erro
+
+    if args.paralelo > 1 and len(pendentes) > 1:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        with ThreadPoolExecutor(max_workers=args.paralelo) as executor:
+            futuros = {executor.submit(tentar, asset, texto): (asset, digest) for asset, texto, digest in pendentes}
+            for futuro in as_completed(futuros):
+                asset, digest = futuros[futuro]
+                concluir(asset, digest, futuro.result())
+    else:
+        for asset, texto, digest in pendentes:
+            concluir(asset, digest, tentar(asset, texto))
 
     gravar_atlas(atlas)  # cobre o caso de nada ter sido gerado (tudo pulado ou tudo falhou)
     print(f"gerados: {len(gerados)} | pulados: {len(pulados)} | falhas: {len(falhas)}", file=sys.stderr)
+    if uso_total:
+        print(f"uso acumulado da API: {uso_total}", file=sys.stderr)
     for identificador, erro in falhas:
         print(f"  falhou {identificador}: {erro}", file=sys.stderr)
     return 1 if falhas else 0

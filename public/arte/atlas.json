@@ -9,7 +9,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "3c9d0ca9cbe8"
+    "hash": "7f431f845f70"
   },
   {
     "id": "movel-balcao",
@@ -21,7 +21,7 @@
       "x": 48,
       "y": 48
     },
-    "hash": "74cae327450d"
+    "hash": "2c87a4bc80d8"
   },
   {
     "id": "movel-cadeira",
@@ -33,7 +33,7 @@
       "x": 16,
       "y": 32
     },
-    "hash": "61b43e68fa2b"
+    "hash": "81c4dc439c86"
   },
   {
     "id": "movel-cafe",
@@ -45,7 +45,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "4eb967880c06"
+    "hash": "55544281b6cb"
   },
   {
     "id": "movel-estante",
@@ -57,7 +57,7 @@
       "x": 16,
       "y": 64
     },
-    "hash": "2193d29b65d4"
+    "hash": "2122775f6d18"
   },
   {
     "id": "movel-impressora",
@@ -69,7 +69,7 @@
       "x": 16,
       "y": 32
     },
-    "hash": "bd0dff4a86d3"
+    "hash": "232902a9da26"
   },
   {
     "id": "movel-mesa",
@@ -81,7 +81,7 @@
       "x": 32,
       "y": 48
     },
-    "hash": "3fb92277b411"
+    "hash": "ae9c968b90a2"
   },
   {
     "id": "movel-mesa-reuniao",
@@ -93,7 +93,7 @@
       "x": 48,
       "y": 48
     },
-    "hash": "228476f67c67"
+    "hash": "7fe195a154b4"
   },
   {
     "id": "movel-planta",
@@ -105,7 +105,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "e2a77239896e"
+    "hash": "7373f4d3cf89"
   },
   {
     "id": "movel-quadro",
@@ -117,7 +117,7 @@
       "x": 32,
       "y": 32
     },
-    "hash": "9b06bfc6322c"
+    "hash": "14f311f4cdaa"
   },
   {
     "id": "personagem-advogado-a",
@@ -129,7 +129,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "bfad17adc11d"
+    "hash": "80503d9847ad"
   },
   {
     "id": "personagem-advogado-b",
@@ -141,7 +141,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "0d19be7ec891"
+    "hash": "f6e669cf5f74"
   },
   {
     "id": "personagem-associado-a",
@@ -153,7 +153,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "96325fb7c205"
+    "hash": "20ebfad06d45"
   },
   {
     "id": "personagem-associado-b",
@@ -165,7 +165,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "d0e8d24132f0"
+    "hash": "501ad969c157"
   },
   {
     "id": "personagem-estagiario-a",
@@ -177,7 +177,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "a673c8882b0e"
+    "hash": "8b85dda00426"
   },
   {
     "id": "personagem-estagiario-b",
@@ -189,7 +189,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "c431c040c993"
+    "hash": "b40ea7904368"
   },
   {
     "id": "personagem-junior-a",
@@ -201,7 +201,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "e6cd56f5ec7a"
+    "hash": "00581fd7c2d8"
   },
   {
     "id": "personagem-junior-b",
@@ -213,7 +213,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "2ab9d6d59ec6"
+    "hash": "7ba580bda204"
   },
   {
     "id": "personagem-senior-a",
@@ -225,7 +225,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "30a89746db2e"
+    "hash": "b50364b8cb81"
   },
   {
     "id": "personagem-senior-b",
@@ -237,7 +237,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "00bbde29f010"
+    "hash": "e79b5c220fdd"
   },
   {
     "id": "personagem-socio-a",
@@ -249,7 +249,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "113baef4b0dd"
+    "hash": "210fc6842ea2"
   },
   {
     "id": "personagem-socio-b",
@@ -261,7 +261,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "736989ce3b59"
+    "hash": "34d93a41e973"
   },
   {
     "id": "piso-carpete",
@@ -273,7 +273,7 @@
       "x": 0,
       "y": 0
     },
-    "hash": "5417e74f6dc5"
+    "hash": "387c3a0ce859"
   },
   {
     "id": "piso-madeira",
@@ -285,7 +285,7 @@
       "x": 0,
       "y": 0
     },
-    "hash": "4f31e2c4b48b"
+    "hash": "1b298216b3e5"
   },
   {
     "id": "piso-parede",
@@ -297,7 +297,7 @@
       "x": 0,
       "y": 0
     },
-    "hash": "c5b70645f149"
+    "hash": "de18bda4ed05"
   },
   {
     "id": "piso-porta",
@@ -309,7 +309,7 @@
       "x": 0,
       "y": 0
     },
-    "hash": "4561e49bab1c"
+    "hash": "175a5f18d6d6"
   },
   {
     "id": "piso-tapete",
@@ -321,6 +321,6 @@
       "x": 0,
       "y": 0
     },
-    "hash": "4225c0ef832d"
+    "hash": "8a395035645f"
   }
 ]
