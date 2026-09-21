@@ -24,6 +24,7 @@ test('trabalhando há 10 min fica desatualizado, sem mudar de estado; some no pr
   esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Bash', id: 'b' } }));
   esc.avancar(10 * MIN);
   esc.tique();
+  assert.equal(esc.tique().length, 0);
   assert.equal(adv(esc).estado, 'trabalhando');
   assert.equal(adv(esc).desatualizado, true);
   esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', id: 'r' } }));
@@ -39,7 +40,7 @@ test('sai após 30 min sem eventos (60 min se aguardando); atividade de estagiá
   esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', id: 'r' }, agente: { id: 'a1' } }));
   esc.avancar(10 * MIN);
   esc.tique();
-  assert.notEqual(adv(esc).estado, 'saiu');
+  assert.equal(adv(esc).estado, 'ocioso');
   esc.avancar(20 * MIN + 1);
   esc.tique();
   assert.equal(adv(esc).estado, 'saiu');
@@ -96,8 +97,70 @@ test('limite de sessões remove a ociosa mais antiga', () => {
   esc.avancar(3 * MIN);
   esc.tique();
   assert.equal(adv(esc, 'claude:A').estado, 'ocioso');
+  assert.equal(adv(esc, 'claude:B').estado, 'ocioso');
   const m = esc.aplicar(ev('prompt', { prompt: 'd', sessao: 'D' }));
   assert.ok(m.some((x) => x.tipo === 'remover' && x.id === 'claude:A'));
   assert.equal(esc.snapshot().advogados.length, 3);
   assert.ok(adv(esc, 'claude:C'));
+  assert.equal(adv(esc, 'claude:B').estado, 'ocioso');
+});
+
+test('limite de sessões: todas em saiu → nova sessão despeja uma delas mantendo o limite', () => {
+  const esc = novo({ limites: { sessoes: 3 } });
+  esc.aplicar(ev('sessao.inicio', { sessao: 'A' }));
+  esc.aplicar(ev('sessao.fim', { sessao: 'A' }));
+  esc.avancar(1000);
+  esc.aplicar(ev('sessao.inicio', { sessao: 'B' }));
+  esc.aplicar(ev('sessao.fim', { sessao: 'B' }));
+  esc.avancar(1000);
+  esc.aplicar(ev('sessao.inicio', { sessao: 'C' }));
+  esc.aplicar(ev('sessao.fim', { sessao: 'C' }));
+  assert.equal(esc.snapshot().advogados.length, 3);
+  const m = esc.aplicar(ev('prompt', { prompt: 'd', sessao: 'D' }));
+  assert.ok(m.some((x) => x.tipo === 'remover' && x.entidade === 'advogado' && x.id === 'claude:A'));
+  assert.equal(esc.snapshot().advogados.length, 3);
+  assert.ok(adv(esc, 'claude:D'));
+});
+
+test('limite de sessões: A e B em saiu, C trabalhando → despeja uma das mortas e C sobrevive', () => {
+  const esc = novo({ limites: { sessoes: 3 } });
+  esc.aplicar(ev('sessao.inicio', { sessao: 'A' }));
+  esc.aplicar(ev('sessao.fim', { sessao: 'A' }));
+  esc.avancar(1000);
+  esc.aplicar(ev('sessao.inicio', { sessao: 'B' }));
+  esc.aplicar(ev('sessao.fim', { sessao: 'B' }));
+  esc.avancar(1000);
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', id: 'r' }, sessao: 'C' }));
+  assert.equal(adv(esc, 'claude:C').estado, 'trabalhando');
+  const m = esc.aplicar(ev('prompt', { prompt: 'd', sessao: 'D' }));
+  assert.ok(m.some((x) => x.tipo === 'remover' && x.entidade === 'advogado' && x.id === 'claude:A'));
+  assert.equal(esc.snapshot().advogados.length, 3);
+  assert.equal(adv(esc, 'claude:C').estado, 'trabalhando');
+});
+
+test('limite de sessões: sem ocioso e sem saiu → despeja a viva mais antiga por atividade agregada', () => {
+  const esc = novo({ limites: { sessoes: 3 } });
+  esc.aplicar(ev('prompt', { prompt: 'a', sessao: 'A' }));
+  esc.avancar(1000);
+  esc.aplicar(ev('prompt', { prompt: 'b', sessao: 'B' }));
+  esc.avancar(1000);
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', id: 'r' }, sessao: 'C' }));
+  const m = esc.aplicar(ev('prompt', { prompt: 'd', sessao: 'D' }));
+  assert.ok(m.some((x) => x.tipo === 'remover' && x.entidade === 'advogado' && x.id === 'claude:A'));
+  assert.equal(esc.snapshot().advogados.length, 3);
+  assert.ok(adv(esc, 'claude:B'));
+  assert.ok(adv(esc, 'claude:C'));
+});
+
+test('limite de sessões: a sessão despejada por limite não fica bloqueada por lápide', () => {
+  const esc = novo({ limites: { sessoes: 3 } });
+  esc.aplicar(ev('prompt', { prompt: 'a', sessao: 'A' }));
+  esc.avancar(1000);
+  esc.aplicar(ev('prompt', { prompt: 'b', sessao: 'B' }));
+  esc.avancar(1000);
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', id: 'r' }, sessao: 'C' }));
+  esc.aplicar(ev('prompt', { prompt: 'd', sessao: 'D' }));
+  assert.equal(adv(esc, 'claude:A'), undefined);
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', id: 'r2' }, sessao: 'A' }));
+  assert.equal(adv(esc, 'claude:A').estado, 'trabalhando');
 });

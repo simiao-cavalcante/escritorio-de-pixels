@@ -128,7 +128,7 @@ export class Escritorio {
         continue;
       }
       const semProprios = agora - adv.ultimaAtividade;
-      const semTudo = agora - Math.max(adv.ultimaAtividade, adv.ultimaAtividadeAgregada);
+      const semTudo = agora - adv.ultimaAtividadeAgregada;
       let mudou = false;
       const limiteSaida = adv.estado === 'aguardando' ? L.saidaAguardandoMs : L.saidaMs;
       if (semTudo >= limiteSaida) {
@@ -158,11 +158,18 @@ export class Escritorio {
 
   _criarAdvogado(id, ev, agora, mudancas) {
     if (this.advogados.size >= this.limites.sessoes) {
-      const vivos = [...this.advogados.values()].filter((a) => a.estado !== 'saiu');
+      const todos = [...this.advogados.values()];
+      const mortos = todos.filter((a) => a.estado === 'saiu');
+      const vivos = todos.filter((a) => a.estado !== 'saiu');
       const ociosos = vivos.filter((a) => a.estado === 'ocioso');
-      const pool = ociosos.length ? ociosos : vivos;
+      // Prioridade de despejo: sessões já saídas (mortas) primeiro, depois as
+      // ociosas, depois as vivas em geral — sempre a mais antiga por
+      // ultimaAtividadeAgregada.
+      const pool = mortos.length ? mortos : (ociosos.length ? ociosos : vivos);
       const vitima = pool.sort((a, b) => a.ultimaAtividadeAgregada - b.ultimaAtividadeAgregada)[0];
-      if (vitima) this._remover(vitima, agora, mudancas);
+      // Despejo por pressão de memória não é a saída natural da spec §5: sem
+      // lápide, para não bloquear por 60 s uma sessão viva que a CLI pode recriar.
+      if (vitima) this._remover(vitima, agora, mudancas, { lapide: false });
     }
     const adv = {
       id, cli: ev.cli, sessao: ev.sessao, modelo: undefined, cargo: this.cargoDoModelo(undefined),
@@ -201,12 +208,13 @@ export class Escritorio {
     this._limparChamadas(adv, mudancas);
   }
 
-  // Remove o advogado do snapshot e deixa uma lápide: identidade bloqueada por
-  // `lapideMs`, exceto para sessao.inicio e prompt (ver checagem em `aplicar`).
-  _remover(adv, agora, mudancas) {
+  // Remove o advogado do snapshot e, por padrão, deixa uma lápide: identidade
+  // bloqueada por `lapideMs`, exceto para sessao.inicio e prompt (ver checagem
+  // em `aplicar`). Despejo por limite de sessões passa `{ lapide: false }`.
+  _remover(adv, agora, mudancas, { lapide = true } = {}) {
     for (const eid of [...adv.estagiarios]) this._removerEstagiario(adv, eid, mudancas);
     this.advogados.delete(adv.id);
-    this.lapides.set(adv.id, agora + this.limites.lapideMs);
+    if (lapide) this.lapides.set(adv.id, agora + this.limites.lapideMs);
     mudancas.push({ tipo: 'remover', entidade: 'advogado', id: adv.id });
   }
 
