@@ -27,6 +27,10 @@ const ESSENCIAIS = ['sessao.inicio', 'prompt', 'ferramenta.inicio', 'ferramenta.
 // UserPromptSubmit a Stop/SessionEnd (Task 18). A tradução de SessionStart continua
 // coberta por test/tradutores-claude.test.js.
 const ESSENCIAIS_POR_CLI = { claude: ESSENCIAIS.filter((tipo) => tipo !== 'sessao.inicio') };
+// O que as fixtures reais NÃO cobrem (e por isso segue coberto só pelos testes por tradutor):
+// `aguardando` (PermissionRequest/Notification/permission_denied), `ferramenta.fim` com
+// `ok: false` (PostToolUseFailure), `subagente.inicio`/`subagente.fim` do Grok,
+// `stop_failure`/`stop_cancelled` do Grok e `tokens` (leitura de transcrito).
 // Motivo do skip quando a CLI está instalada mas não produziu captura.
 const SEM_CAPTURA = {
   codex: 'Codex exige confiança interativa nos hooks; fixtures reais pendentes',
@@ -57,7 +61,12 @@ for (const cli of CLIS) {
       if (eventos === null) continue;
       const r = normalizarLote(eventos, agora);
       assert.deepEqual(r.rejeitados, [], `${cli}/${basename(arquivo)}`);
-      for (const e of r.eventos) tipos.add(e.tipo);
+      for (const e of r.eventos) {
+        tipos.add(e.tipo);
+        // detalhe começando por '{' é entrada de ferramenta serializada em JSON, não resumo:
+        // sinal de que falta a chave real da CLI em CHAVES_DETALHE (src/tradutores/comum.js).
+        assert.ok(!e.ferramenta?.detalhe?.startsWith('{'), `${cli}/${basename(arquivo)}: detalhe cru em JSON (${e.ferramenta?.detalhe})`);
+      }
     }
     for (const tipo of ESSENCIAIS_POR_CLI[cli] ?? ESSENCIAIS) assert.ok(tipos.has(tipo), `${cli}: falta ${tipo} nas fixtures (${[...tipos].join(', ')})`);
   });
