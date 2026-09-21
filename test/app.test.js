@@ -100,6 +100,8 @@ test('POST /eventos aplica e GET /estado reflete; Host estranho recebe 421; Orig
     const estado = await (await fetch(url('/estado'))).json();
     assert.equal(estado.advogados[0].estado, 'pensando');
     assert.equal(estado.salas.length, 7);
+    assert.deepEqual(estado.crachas.clis.claude, { cor: '#c2603e', sigla: 'CL' });
+    assert.deepEqual(estado.crachas.padrao, { cor: '#8a8a8a', sigla: '??' });
     assert.equal(estado.saude.eventos.eventos, 1);
     assert.equal(estado.saude.eventos.invalidos, 1);
     assert.equal((await bruto({ porta, caminho: '/estado', headers: { host: 'evil.com:80' } })).status, 421);

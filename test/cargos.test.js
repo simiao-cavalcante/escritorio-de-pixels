@@ -32,6 +32,16 @@ test('crachá por CLI com fallback', () => {
   assert.deepEqual(crachaDaCli('desconhecida'), { cor: '#8a8a8a', sigla: '??' });
 });
 
+test('listarCrachas entrega o mapa inteiro para o cliente, em cópia', () => {
+  const classificador = padrao();
+  const crachas = classificador.listarCrachas();
+  assert.deepEqual(Object.keys(crachas.clis).sort(), ['claude', 'codex', 'cursor', 'gemini', 'grok', 'opencode']);
+  assert.deepEqual(crachas.clis.codex, { cor: '#2e9e5b', sigla: 'CX' });
+  assert.deepEqual(crachas.padrao, { cor: '#8a8a8a', sigla: '??' });
+  crachas.clis.claude.sigla = 'XX';
+  assert.equal(classificador.crachaDaCli('claude').sigla, 'CL');
+});
+
 test('validação rejeita id de cargo, regex e cor inválidos', () => {
   assert.equal(validarConfigCargos({ versao: 1, padrao: 'advogado', cargos: [{ id: 'rei', padroes: ['x'] }] }).ok, false);
   assert.equal(validarConfigCargos({ versao: 1, padrao: 'advogado', cargos: [{ id: 'socio', padroes: ['('] }] }).ok, false);

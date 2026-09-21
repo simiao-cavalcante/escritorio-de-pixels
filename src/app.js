@@ -116,6 +116,7 @@ export function criarAplicacao({
     return {
       ...escritorio.snapshot(),
       salas: Object.entries(SALAS_ROTULOS).map(([id, rotulo]) => ({ id, rotulo })),
+      crachas: cargos.listarCrachas(),
       saude,
     };
   }
