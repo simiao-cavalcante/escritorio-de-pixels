@@ -18,7 +18,7 @@ export const CARGOS_EMBUTIDOS = Object.freeze({
     codex: { cor: '#2e9e5b', sigla: 'CX' },
     gemini: { cor: '#3b7dd8', sigla: 'GM' },
     grok: { cor: '#4a4a4a', sigla: 'GK' },
-    cursor: { cor: '#7c4dff', sigla: 'CU' },
+    cursor: { cor: '#7c4dff', sigla: 'CR' },
     opencode: { cor: '#1fa8a0', sigla: 'OC' },
   },
   cliPadrao: { cor: '#8a8a8a', sigla: '??' },
