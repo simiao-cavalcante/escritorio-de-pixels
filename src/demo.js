@@ -12,7 +12,10 @@ export const ROTEIROS = Object.freeze([
   {
     cli: 'claude', sessao: 'demo-claude', modelo: 'claude-fable-5-1', cwd: '/demo/execucao-fiscal',
     prompt: 'Minutar contestação em execução fiscal de IPTU (caso fictício)',
-    passos: [['Read', 'peticao-inicial.md'], ['Grep', 'prescrição'], ['WebSearch', 'prescrição intercorrente execução fiscal STJ'], ['Agent', 'Explore: levantar precedentes do STJ'], ['Write', 'contestacao.md'], ['Edit', 'contestacao.md'], ['Bash', 'git commit -m "minuta"']],
+    // aguardaApos: índice do passo após o qual o advogado aguarda permissão (vai à
+    // copa) antes de retomar com o próximo passo — cobre a sala `copa`.
+    passos: [['Read', 'peticao-inicial.md'], ['Grep', 'prescrição'], ['WebSearch', 'prescrição intercorrente execução fiscal STJ'], ['Agent', 'Explore: levantar precedentes do STJ'], ['Write', 'contestacao.md'], ['Edit', 'contestacao.md'], ['Agent', 'code-reviewer: revisar a minuta (caso fictício)'], ['Bash', 'git commit -m "minuta"']],
+    aguardaApos: 1,
   },
   {
     cli: 'codex', sessao: 'demo-codex', modelo: 'gpt-6-astra', cwd: '/demo/parecer-licitacao',
@@ -62,7 +65,12 @@ export function iniciarDemo(ingerir, { agora = () => Date.now(), intervaloMs = 1
         if (nome === 'Agent') {
           c.subagentes += 1;
           const id = `${r.sessao}-ag${c.subagentes}`;
-          lote.push({ ...b, tipo: 'subagente.inicio', agente: { id, tipo: 'Explore', descricao: detalhe } });
+          // Convenção "tipo: descrição" (mesma dos tradutores reais): o tipo decide
+          // a sala do estagiário via salas.js (ex.: code-reviewer → revisao).
+          const sep = detalhe.indexOf(': ');
+          const tipo = sep === -1 ? detalhe : detalhe.slice(0, sep);
+          const descricao = sep === -1 ? detalhe : detalhe.slice(sep + 2);
+          lote.push({ ...b, tipo: 'subagente.inicio', agente: { id, tipo, descricao } });
           lote.push({ ...b, tipo: 'ferramenta.inicio', ferramenta: { nome: 'Grep', detalhe: 'precedentes', id: `${id}-t` }, agente: { id } });
           c.agente = id;
         }
@@ -76,15 +84,25 @@ export function iniciarDemo(ingerir, { agora = () => Date.now(), intervaloMs = 1
           c.agente = undefined;
         }
         lote.push({ ...b, tipo: 'ferramenta.fim', ferramenta: { nome, id: `${r.sessao}-${c.indice}`, ok: true } });
+        const finalizado = c.indice;
         c.indice += 1;
         if (c.indice >= r.passos.length) {
           lote.push({ ...b, tipo: 'tokens', tokens: { contexto: 40_000 + Math.floor(rng() * 90_000), janela: 200_000, saidaIncremento: 500 + Math.floor(rng() * 2000) } });
           lote.push({ ...b, tipo: 'parado' });
           c.fase = 'prompt';
           c.espera = 4 + Math.floor(rng() * 6);
+        } else if (r.aguardaApos === finalizado) {
+          c.fase = 'aguardando';
+          c.espera = 1 + Math.floor(rng() * 2);
         } else {
           c.fase = 'ferramenta';
         }
+      } else if (c.fase === 'aguardando') {
+        // Pede permissão (ex.: Bash fora de allowlist): vai à copa e volta ao
+        // retomar com o próximo passo da ferramenta.
+        lote.push({ ...b, tipo: 'aguardando', motivo: 'permissao' });
+        c.fase = 'ferramenta';
+        c.espera = 1 + Math.floor(rng() * 3);
       }
     }
     if (lote.length) ingerir(lote, 'demo');
