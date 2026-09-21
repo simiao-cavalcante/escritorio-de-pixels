@@ -4,8 +4,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -15,8 +15,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -26,8 +26,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -37,8 +37,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -48,8 +48,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -59,8 +59,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -70,8 +70,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -81,8 +81,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -92,8 +92,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -103,8 +103,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -114,8 +114,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -125,8 +125,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]
@@ -136,8 +136,8 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:7777/hook/grok",
+            "type": "command",
+            "command": "curl -s -m 2 -X POST -H 'content-type: application/json' --data-binary @- http://127.0.0.1:7777/hook/grok >/dev/null 2>&1 || true",
             "timeout": 2
           }
         ]

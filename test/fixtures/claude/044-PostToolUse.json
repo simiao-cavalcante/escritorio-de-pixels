@@ -1,0 +1,27 @@
+{
+  "session_id": "sessao-1",
+  "transcript_path": "/home/u/.claude/projects/-private-tmp-escritorio-claude-l9RKdO/sessao-1.jsonl",
+  "cwd": "/private/tmp/escritorio-claude-l9RKdO",
+  "prompt_id": "sessao-2",
+  "permission_mode": "acceptEdits",
+  "agent_id": "a796fcf9d5e4c0703",
+  "agent_type": "Explore",
+  "effort": {
+    "level": "xhigh"
+  },
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la /private/tmp/escritorio-claude-l9RKdO",
+    "description": "List all directory contents including hidden files"
+  },
+  "tool_response": {
+    "stdout": "total 16\ndrwx------@  4 u  wheel   128 Sep 21 10:06 .\ndrwxrwxrwt  67 root    ...",
+    "stderr": "",
+    "interrupted": false,
+    "isImage": false,
+    "noOutputExpected": false
+  },
+  "tool_use_id": "toolu_01JYdeaAQMXxJbMmpHyK3bcR",
+  "duration_ms": 80
+}

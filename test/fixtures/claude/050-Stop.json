@@ -1,0 +1,15 @@
+{
+  "session_id": "sessao-1",
+  "transcript_path": "/home/u/.claude/projects/-private-tmp-escritorio-claude-l9RKdO/sessao-1.jsonl",
+  "cwd": "/private/tmp/escritorio-claude-l9RKdO",
+  "prompt_id": "sessao-2",
+  "permission_mode": "acceptEdits",
+  "effort": {
+    "level": "xhigh"
+  },
+  "hook_event_name": "Stop",
+  "stop_hook_active": false,
+  "last_assistant_message": "Tudo concluído.\n\n**Conteúdo do a.txt:**\n\n```\nArt. 1º Texto de teste.\n```\n\n**b...",
+  "background_tasks": [],
+  "session_crons": []
+}

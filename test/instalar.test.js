@@ -144,7 +144,12 @@ test('grok usa arquivo próprio: desinstalar remove o arquivo com backup', () =>
   const home = casa();
   const r = instalar('grok', { home, porta: 7777, agora });
   assert.equal(r.arquivo, join(home, '.grok', 'hooks', 'escritorio.json'));
-  assert.equal(JSON.parse(readFileSync(r.arquivo, 'utf8')).hooks.PreToolUse[0].hooks[0].type, 'http');
+  // O Grok recusa hook http apontando para http:// (proteção SSRF): o nosso vai como command.
+  const nossa = JSON.parse(readFileSync(r.arquivo, 'utf8')).hooks.PreToolUse[0].hooks[0];
+  assert.equal(nossa.type, 'command');
+  assert.match(nossa.command, /127\.0\.0\.1:7777\/hook\/grok/);
+  assert.equal(nossa.timeout, 2);
+  assert.equal(nossa.url, undefined);
   const d = desinstalar('grok', { home, agora });
   assert.equal(existsSync(r.arquivo), false);
   assert.equal(existsSync(d.backup), true);

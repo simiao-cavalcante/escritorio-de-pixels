@@ -1,0 +1,9 @@
+{
+  "session_id": "sessao-1",
+  "transcript_path": "/home/u/.claude/projects/-private-tmp-escritorio-claude-l9RKdO/sessao-1.jsonl",
+  "cwd": "/private/tmp/escritorio-claude-l9RKdO",
+  "prompt_id": "sessao-2",
+  "agent_id": "a796fcf9d5e4c0703",
+  "agent_type": "Explore",
+  "hook_event_name": "SubagentStart"
+}

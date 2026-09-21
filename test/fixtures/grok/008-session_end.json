@@ -1,0 +1,14 @@
+{
+  "hookEventName": "session_end",
+  "sessionId": "sessao-3",
+  "cwd": "/private/tmp/escritorio-grok-3fsSB8",
+  "workspaceRoot": "/private/tmp/escritorio-grok-3fsSB8",
+  "timestamp": "2026-09-21T13:30:13.515539+00:00",
+  "transcriptPath": "/home/u/.grok/sessions/%2Fprivate%2Ftmp%2Fescritorio-grok-3fsSB8/sessao-3/upd...",
+  "permissionMode": "bypassPermissions",
+  "reason": "shutdown",
+  "hook_event_name": "SessionEnd",
+  "session_id": "sessao-3",
+  "transcript_path": "/home/u/.grok/sessions/%2Fprivate%2Ftmp%2Fescritorio-grok-3fsSB8/sessao-3/upd...",
+  "permission_mode": "bypassPermissions"
+}

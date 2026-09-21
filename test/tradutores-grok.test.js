@@ -15,6 +15,12 @@ test('exemplo da documentação vira ferramenta.inicio com cli grok', () => {
   assert.equal(normalizarLote(evs, agora).rejeitados.length, 0);
 });
 
+test('read_file do Grok nomeia o arquivo em target_file (grafia real, Task 18)', () => {
+  const t = criarTradutorGrok({ agora });
+  const evs = t({ ...comum, hookEventName: 'pre_tool_use', hook_event_name: 'PreToolUse', toolName: 'read_file', toolInput: { target_file: 'a.txt' }, toolUseId: 'tu2' });
+  assert.deepEqual(evs[0].ferramenta, { nome: 'read_file', detalhe: 'a.txt', id: 'tu2' });
+});
+
 test('mapa completo de eventos, com subagentes e notificações', () => {
   const t = criarTradutorGrok({ agora });
   const tipo = (h, extra = {}) => t({ ...comum, hookEventName: h, ...extra })?.[0]?.tipo;

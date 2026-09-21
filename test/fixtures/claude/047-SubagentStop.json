@@ -1,0 +1,18 @@
+{
+  "session_id": "sessao-1",
+  "transcript_path": "/home/u/.claude/projects/-private-tmp-escritorio-claude-l9RKdO/sessao-1.jsonl",
+  "cwd": "/private/tmp/escritorio-claude-l9RKdO",
+  "prompt_id": "sessao-2",
+  "permission_mode": "acceptEdits",
+  "agent_id": "a796fcf9d5e4c0703",
+  "agent_type": "Explore",
+  "effort": {
+    "level": "xhigh"
+  },
+  "hook_event_name": "SubagentStop",
+  "stop_hook_active": false,
+  "agent_transcript_path": "/home/u/.claude/projects/-private-tmp-escritorio-claude-l9RKdO/sessao-1/subag...",
+  "last_assistant_message": "Listagem completa de `/private/tmp/escritorio-claude-l9RKdO`:\n\n| Item | Tipo ...",
+  "background_tasks": [],
+  "session_crons": []
+}

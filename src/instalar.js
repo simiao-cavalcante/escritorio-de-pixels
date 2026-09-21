@@ -32,7 +32,8 @@ export function arquivoDeHooks(cli, home = homedir()) {
 function entrada(cli, porta) {
   switch (cli) {
     case 'claude': return { type: 'http', url: urlHook('claude', porta), timeout: 2 };
-    case 'grok': return { type: 'http', url: urlHook('grok', porta), timeout: 2 };
+    // Grok 1.0.34 bloqueia hooks http para http:// (SSRF); usamos command.
+    case 'grok': return { type: 'command', command: comandoCurl('grok', porta), timeout: 2 };
     case 'codex': return { type: 'command', command: comandoCurl('codex', porta), timeout: 2 };
     case 'cursor': return { command: comandoCurl('cursor', porta), timeout: 2 };
     default: return { type: 'command', command: comandoCurl('gemini', porta), timeout: 2000 };

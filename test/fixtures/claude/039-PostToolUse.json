@@ -1,0 +1,26 @@
+{
+  "session_id": "sessao-1",
+  "transcript_path": "/home/u/.claude/projects/-private-tmp-escritorio-claude-l9RKdO/sessao-1.jsonl",
+  "cwd": "/private/tmp/escritorio-claude-l9RKdO",
+  "prompt_id": "sessao-2",
+  "permission_mode": "acceptEdits",
+  "effort": {
+    "level": "xhigh"
+  },
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/private/tmp/escritorio-claude-l9RKdO/b.txt",
+    "content": "Art. 1º Texto de teste.\n"
+  },
+  "tool_response": {
+    "type": "create",
+    "filePath": "/private/tmp/escritorio-claude-l9RKdO/b.txt",
+    "content": "Art. 1º Texto de teste.\n",
+    "structuredPatch": [],
+    "originalFile": null,
+    "userModified": false
+  },
+  "tool_use_id": "toolu_01EyEk77i6tqVQdzkWduy1FA",
+  "duration_ms": 2
+}

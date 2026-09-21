@@ -1,0 +1,16 @@
+{
+  "session_id": "sessao-1",
+  "transcript_path": "/home/u/.claude/projects/-private-tmp-escritorio-claude-l9RKdO/sessao-1.jsonl",
+  "cwd": "/private/tmp/escritorio-claude-l9RKdO",
+  "prompt_id": "sessao-2",
+  "permission_mode": "acceptEdits",
+  "effort": {
+    "level": "xhigh"
+  },
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Read",
+  "tool_input": {
+    "file_path": "/private/tmp/escritorio-claude-l9RKdO/a.txt"
+  },
+  "tool_use_id": "toolu_01AX3mrorv2qdLrGZxwAHAia"
+}

@@ -25,7 +25,8 @@ export function campo(p, ...nomes) {
 }
 
 const AGENTES = ['Agent', 'Task', 'spawn_subagent'];
-const CHAVES_DETALHE = ['file_path', 'filePath', 'path', 'notebook_path', 'command', 'cmd', 'query', 'pattern', 'url', 'description', 'prompt', 'skill', 'name'];
+// target_file: grafia do read_file do Grok, confirmada pelas fixtures reais (Task 18).
+const CHAVES_DETALHE = ['file_path', 'filePath', 'target_file', 'path', 'notebook_path', 'command', 'cmd', 'query', 'pattern', 'url', 'description', 'prompt', 'skill', 'name'];
 
 // Resume a entrada de uma ferramenta em um texto curto, para exibição.
 export function resumirEntrada(nome, entrada) {

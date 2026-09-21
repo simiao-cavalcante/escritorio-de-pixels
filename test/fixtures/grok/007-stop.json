@@ -1,0 +1,19 @@
+{
+  "hookEventName": "stop",
+  "sessionId": "sessao-3",
+  "cwd": "/private/tmp/escritorio-grok-3fsSB8",
+  "workspaceRoot": "/private/tmp/escritorio-grok-3fsSB8",
+  "timestamp": "2026-09-21T13:30:12.999811+00:00",
+  "transcriptPath": "/home/u/.grok/sessions/%2Fprivate%2Ftmp%2Fescritorio-grok-3fsSB8/sessao-3/upd...",
+  "promptId": "sessao-4",
+  "permissionMode": "bypassPermissions",
+  "reason": "end_turn",
+  "stopHookActive": false,
+  "lastAssistantMessage": "`b.txt` foi criado com o mesmo conteúdo de `a.txt`:\n\n`Art. 1º Texto de teste.`",
+  "backgroundTasks": [],
+  "sessionCrons": [],
+  "hook_event_name": "Stop",
+  "session_id": "sessao-3",
+  "transcript_path": "/home/u/.grok/sessions/%2Fprivate%2Ftmp%2Fescritorio-grok-3fsSB8/sessao-3/upd...",
+  "permission_mode": "bypassPermissions"
+}

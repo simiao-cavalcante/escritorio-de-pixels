@@ -1,0 +1,50 @@
+{
+  "hookEventName": "post_tool_use",
+  "sessionId": "sessao-3",
+  "cwd": "/private/tmp/escritorio-grok-3fsSB8",
+  "workspaceRoot": "/private/tmp/escritorio-grok-3fsSB8",
+  "timestamp": "2026-09-21T13:30:08.524516+00:00",
+  "transcriptPath": "/home/u/.grok/sessions/%2Fprivate%2Ftmp%2Fescritorio-grok-3fsSB8/sessao-3/upd...",
+  "permissionMode": "bypassPermissions",
+  "toolName": "read_file",
+  "toolUseId": "call-50a009bb-d0fa-4a05-a3df-3a319e1c03eb-0",
+  "toolInput": {
+    "target_file": "a.txt"
+  },
+  "toolResult": {
+    "type": "ReadFile",
+    "FileContent": {
+      "content": "1→Art. 1º Texto de teste.\n",
+      "content_concise": "1→Art. 1º Texto de teste.\n",
+      "absolute_path": "/private/tmp/escritorio-grok-3fsSB8/a.txt",
+      "offset": null,
+      "raw_output": "Art. 1º Texto de teste.\n",
+      "total_lines": 2
+    }
+  },
+  "toolInputTruncated": false,
+  "toolResultTruncated": false,
+  "durationMs": 7,
+  "isBackgrounded": false,
+  "hook_event_name": "PostToolUse",
+  "session_id": "sessao-3",
+  "transcript_path": "/home/u/.grok/sessions/%2Fprivate%2Ftmp%2Fescritorio-grok-3fsSB8/sessao-3/upd...",
+  "permission_mode": "bypassPermissions",
+  "tool_name": "read_file",
+  "tool_input": {
+    "target_file": "a.txt"
+  },
+  "tool_response": {
+    "type": "ReadFile",
+    "FileContent": {
+      "content": "1→Art. 1º Texto de teste.\n",
+      "content_concise": "1→Art. 1º Texto de teste.\n",
+      "absolute_path": "/private/tmp/escritorio-grok-3fsSB8/a.txt",
+      "offset": null,
+      "raw_output": "Art. 1º Texto de teste.\n",
+      "total_lines": 2
+    }
+  },
+  "tool_use_id": "call-50a009bb-d0fa-4a05-a3df-3a319e1c03eb-0",
+  "duration_ms": 7
+}

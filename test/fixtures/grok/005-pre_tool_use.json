@@ -1,0 +1,26 @@
+{
+  "hookEventName": "pre_tool_use",
+  "sessionId": "sessao-3",
+  "cwd": "/private/tmp/escritorio-grok-3fsSB8",
+  "workspaceRoot": "/private/tmp/escritorio-grok-3fsSB8",
+  "timestamp": "2026-09-21T13:30:11.297007+00:00",
+  "transcriptPath": "/home/u/.grok/sessions/%2Fprivate%2Ftmp%2Fescritorio-grok-3fsSB8/sessao-3/upd...",
+  "permissionMode": "bypassPermissions",
+  "toolName": "write",
+  "toolUseId": "call-1e76eb22-4454-4974-8bcb-3e8fc2c5010f-1",
+  "toolInput": {
+    "file_path": "b.txt",
+    "content": "Art. 1º Texto de teste.\n"
+  },
+  "toolInputTruncated": false,
+  "hook_event_name": "PreToolUse",
+  "session_id": "sessao-3",
+  "transcript_path": "/home/u/.grok/sessions/%2Fprivate%2Ftmp%2Fescritorio-grok-3fsSB8/sessao-3/upd...",
+  "permission_mode": "bypassPermissions",
+  "tool_name": "write",
+  "tool_input": {
+    "file_path": "b.txt",
+    "content": "Art. 1º Texto de teste.\n"
+  },
+  "tool_use_id": "call-1e76eb22-4454-4974-8bcb-3e8fc2c5010f-1"
+}

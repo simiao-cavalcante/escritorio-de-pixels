@@ -1,0 +1,13 @@
+{
+  "hookEventName": "user_prompt_submit",
+  "sessionId": "sessao-3",
+  "cwd": "/private/tmp/escritorio-grok-3fsSB8",
+  "workspaceRoot": "/private/tmp/escritorio-grok-3fsSB8",
+  "timestamp": "2026-09-21T13:30:04.218698+00:00",
+  "promptId": "sessao-4",
+  "permissionMode": "bypassPermissions",
+  "prompt": "Leia a.txt e crie b.txt com o mesmo conteúdo.",
+  "hook_event_name": "UserPromptSubmit",
+  "session_id": "sessao-3",
+  "permission_mode": "bypassPermissions"
+}
