@@ -9,7 +9,7 @@
       "x": 16,
       "y": 48
     },
-    "hash": "f200fd441f7e"
+    "hash": "3c9d0ca9cbe8"
   },
   {
     "id": "movel-balcao",
@@ -33,7 +33,7 @@
       "x": 16,
       "y": 32
     },
-    "hash": "0de975da3f4c"
+    "hash": "61b43e68fa2b"
   },
   {
     "id": "movel-cafe",
@@ -93,7 +93,7 @@
       "x": 48,
       "y": 48
     },
-    "hash": "86604351778b"
+    "hash": "228476f67c67"
   },
   {
     "id": "movel-planta",
@@ -117,7 +117,7 @@
       "x": 32,
       "y": 32
     },
-    "hash": "cc41855bc5b1"
+    "hash": "9b06bfc6322c"
   },
   {
     "id": "personagem-advogado-a",
@@ -297,7 +297,7 @@
       "x": 0,
       "y": 0
     },
-    "hash": "e42d1f09c7ff"
+    "hash": "c5b70645f149"
   },
   {
     "id": "piso-porta",
