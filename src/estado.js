@@ -86,7 +86,7 @@ export class Escritorio {
         }
         break;
       case 'sessao.fim':
-        this._sair(adv, agora);
+        this._sair(adv, agora, mudancas);
         break;
       case 'tokens':
         this._aplicarTokens(adv, ev.tokens);
@@ -145,10 +145,10 @@ export class Escritorio {
     adv.sala = sala;
   }
 
-  _sair(adv, agora) {
+  _sair(adv, agora, mudancas) {
     adv.estado = 'saiu';
     adv.saiuEm = agora;
-    adv.chamadasPendentes.clear();
+    this._limparChamadas(adv, mudancas);
   }
 
   _salaAoVoltar(adv) {
@@ -219,6 +219,7 @@ export class Escritorio {
         if (vitima) this._removerEstagiario(adv, vitima.id, mudancas);
       }
       est = {
+        // sessao é o id do advogado (cli:sessao): é o que o cliente usa para achar o dono
         id, sessao: adv.id, tipo: agente.tipo, descricao: agente.descricao,
         estado: 'pensando', sala: this.salaInicialEstagiario(agente.tipo),
         chamadasPendentes: new Map(), ultimaAtividade: agora,
@@ -237,13 +238,15 @@ export class Escritorio {
   _aplicarEstagiario(adv, ev, agora, mudancas) {
     const id = `${adv.id}:${ev.agente.id}`;
     const est = this.estagiarios.get(id) ?? this._criarEstagiario(adv, ev.agente, agora, mudancas);
-    est.ultimaAtividade = agora;
     if (ev.tipo === 'ferramenta.inicio') {
+      est.ultimaAtividade = agora;
       this._abrirChamada(est, ev.ferramenta, this.limites.pendentesEstagiario);
       est.estado = 'trabalhando';
       est.sala = this.resolverSala(ev.ferramenta);
     } else {
-      this._fecharChamada(est, ev.ferramenta);
+      const fechou = this._fecharChamada(est, ev.ferramenta);
+      if (!fechou) return;
+      est.ultimaAtividade = agora;
       const atual = this._ultimaChamada(est);
       if (atual) est.sala = this.resolverSala(atual);
       else est.estado = 'pensando';
@@ -252,7 +255,10 @@ export class Escritorio {
   }
 
   _removerEstagiario(adv, id, mudancas) {
-    if (!this.estagiarios.delete(id)) return;
+    if (!this.estagiarios.delete(id)) {
+      adv.estagiarios.delete(id);
+      return;
+    }
     adv.estagiarios.delete(id);
     mudancas.push({ tipo: 'remover', entidade: 'estagiario', id });
   }

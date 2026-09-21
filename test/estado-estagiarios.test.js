@@ -62,6 +62,45 @@ test('limite de 32 estagiários substitui o ocioso mais antigo', () => {
   assert.equal(est(esc, 'claude:s1:a1'), undefined);
 });
 
+test('sessao.fim descarta as pendentes dos estagiários e do advogado', () => {
+  const esc = novo();
+  esc.aplicar(ev('subagente.inicio', { agente: { id: 'a1', tipo: 'Explore' } }));
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Bash', id: 'b1' }, agente: { id: 'a1' } }));
+  assert.equal(est(esc, 'claude:s1:a1').estado, 'trabalhando');
+  const m = esc.aplicar(ev('sessao.fim'));
+  assert.ok(m.some((x) => x.tipo === 'estagiario' && x.estagiario.estado === 'pensando'));
+  const e = est(esc, 'claude:s1:a1');
+  assert.equal(e.estado, 'pensando');
+  assert.equal(e.atividade, null);
+  assert.equal(adv(esc).estado, 'saiu');
+});
+
+test('limite de 8 pendentes por estagiário; atividade é a mais recente', () => {
+  const esc = novo();
+  esc.aplicar(ev('subagente.inicio', { agente: { id: 'a1', tipo: 'Explore' } }));
+  for (let i = 0; i < 10; i += 1) {
+    esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Read', detalhe: `${i}`, id: `r${i}` }, agente: { id: 'a1' } }));
+  }
+  assert.equal(esc.estagiarios.get('claude:s1:a1').chamadasPendentes.size, 8);
+  assert.equal(est(esc, 'claude:s1:a1').atividade.detalhe, '9');
+});
+
+test('ferramenta com agente desconhecido cria estagiário implicitamente; subagente.inicio depois não duplica e completa metadados', () => {
+  const esc = novo();
+  esc.aplicar(ev('ferramenta.inicio', { ferramenta: { nome: 'Bash', id: 'b1' }, agente: { id: 'a1' } }));
+  assert.equal(esc.estagiarios.size, 1);
+  let e = est(esc, 'claude:s1:a1');
+  assert.equal(e.tipo, null);
+  assert.equal(e.sessao, 'claude:s1');
+  esc.aplicar(ev('subagente.inicio', { agente: { id: 'a1', tipo: 'Explore', descricao: 'buscar' } }));
+  assert.equal(esc.estagiarios.size, 1);
+  e = est(esc, 'claude:s1:a1');
+  assert.equal(e.tipo, 'Explore');
+  assert.equal(e.descricao, 'buscar');
+  assert.equal(e.sessao, 'claude:s1');
+  assert.deepEqual(adv(esc).estagiarios, ['claude:s1:a1']);
+});
+
 test('tokens: total substitui e zera estimativa; incremento soma e marca estimado', () => {
   const esc = novo();
   esc.aplicar(ev('tokens', { tokens: { contexto: 1000, janela: 200000, saidaIncremento: 50 } }));
