@@ -25,6 +25,7 @@ export function lerTokensCodex(caminho, _ultimo, { dirsPermitidos = [], maxBytes
   const tokens = { contexto: ultimo.input_tokens ?? 0 };
   if (typeof info.model_context_window === 'number') tokens.janela = info.model_context_window;
   if (typeof total.output_tokens === 'number') tokens.saidaTotal = total.output_tokens;
+  else if (typeof ultimo.output_tokens === 'number') tokens.saidaIncremento = ultimo.output_tokens;
   return { tokens, ultimoUuid: undefined, parcial: false, modelo };
 }
 
