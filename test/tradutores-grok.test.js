@@ -38,3 +38,12 @@ test('mapa completo de eventos, com subagentes e notificações', () => {
   assert.equal(t({ ...comum, hookEventName: 'pre_compact' }), null);
   assert.equal(t({ hookEventName: 'stop' }), null);
 });
+
+test('permission_denied fecha a chamada pendente com falha, e sem nome de ferramenta não emite nada', () => {
+  const t = criarTradutorGrok({ agora });
+  const evs = t({ ...comum, hookEventName: 'permission_denied', toolName: 'run_terminal_command', toolUseId: 'tu1' });
+  assert.equal(evs[0].tipo, 'ferramenta.fim');
+  assert.deepEqual(evs[0].ferramenta, { nome: 'run_terminal_command', id: 'tu1', ok: false });
+  assert.equal(normalizarLote(evs, agora).rejeitados.length, 0);
+  assert.deepEqual(t({ ...comum, hookEventName: 'permission_denied' }), []);
+});

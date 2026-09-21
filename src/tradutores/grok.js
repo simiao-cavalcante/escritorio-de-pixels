@@ -35,7 +35,12 @@ export function criarTradutorGrok({ agora = () => Date.now() } = {}) {
         return [evento(b, 'ferramenta.inicio', { ferramenta, agente })];
       }
       case 'post_tool_use':
-      case 'post_tool_use_failure': {
+      case 'post_tool_use_failure':
+      // permission_denied fecha a chamada pendente aberta por pre_tool_use, como falha
+      // (spec §7). Sem nome de ferramenta no payload não há chamada para fechar: []
+      // (evento reconhecido, nada a emitir), nunca null (não conta como inválido no /saude).
+      case 'permission_denied': {
+        if (nome === 'permission_denied' && campo(p, 'toolName', 'tool_name') === undefined) return [];
         const ferramenta = { nome: nomeFerramenta };
         if (idChamada !== undefined) ferramenta.id = idChamada;
         ferramenta.ok = nome === 'post_tool_use';
