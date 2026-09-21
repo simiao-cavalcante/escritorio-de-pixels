@@ -1,0 +1,14 @@
+{
+  "session_id": "codex-1",
+  "turn_id": "codex-2",
+  "transcript_path": "/home/u/.codex/sessions/2026/09/21/rollout-2026-09-21T11-35-56-codex-1.jsonl",
+  "cwd": "/private/tmp/codex-confianca-lbPF",
+  "hook_event_name": "PreToolUse",
+  "model": "gpt-6-astra",
+  "permission_mode": "bypassPermissions",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "cat a.txt"
+  },
+  "tool_use_id": "exec-0581bb62-a9e6-4cbd-b6b9-50548532e180"
+}

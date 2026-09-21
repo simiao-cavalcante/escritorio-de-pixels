@@ -1,0 +1,9 @@
+{
+  "session_id": "codex-1",
+  "transcript_path": "/home/u/.codex/sessions/2026/09/21/rollout-2026-09-21T11-35-56-codex-1.jsonl",
+  "cwd": "/private/tmp/codex-confianca-lbPF",
+  "hook_event_name": "SessionStart",
+  "model": "gpt-6-astra",
+  "permission_mode": "bypassPermissions",
+  "source": "startup"
+}

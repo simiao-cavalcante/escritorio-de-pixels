@@ -15,7 +15,8 @@ import { join } from 'node:path';
 import { homedir, userInfo } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
-const CHAVES_SESSAO = new Set(['session_id', 'sessionId', 'conversation_id', 'conversationId', 'thread_id', 'promptId', 'prompt_id', 'generation_id']);
+// turn_id: o Codex manda o id do turno em todo evento, e é um UUID real como os demais.
+const CHAVES_SESSAO = new Set(['session_id', 'sessionId', 'conversation_id', 'conversationId', 'thread_id', 'promptId', 'prompt_id', 'generation_id', 'turn_id', 'turnId']);
 
 // Padrões que forçam redação: não dá para confiar no corte por tamanho para esconder segredo.
 const PROIBIDOS = [

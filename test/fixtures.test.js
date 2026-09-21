@@ -33,7 +33,6 @@ const ESSENCIAIS_POR_CLI = { claude: ESSENCIAIS.filter((tipo) => tipo !== 'sessa
 // `stop_failure`/`stop_cancelled` do Grok e `tokens` (leitura de transcrito).
 // Motivo do skip quando a CLI está instalada mas não produziu captura.
 const SEM_CAPTURA = {
-  codex: 'Codex exige confiança interativa nos hooks; fixtures reais pendentes',
   cursor: 'hooks do Cursor não dispararam nesta máquina (formato confere com a skill oficial create-hook; hipótese de shell descartada)',
 };
 
