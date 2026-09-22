@@ -50,13 +50,22 @@ body {
 }
 .botao:focus-visible, .linha:focus-visible { outline: 2px solid var(--realce); outline-offset: 2px; }
 
-.palco { display: flex; justify-content: center; padding: 0; } /* sem padding vertical: escalaDaTela só desconta a barra */
+/* O palco ocupa tudo abaixo da barra e centraliza o canvas nos dois eixos: com a escala inteira
+   (escalaDaTela) quase sempre sobra espaço, e a sobra fica repartida em volta. Sem padding: a
+   escala só desconta a barra. */
+.palco {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - var(--altura-barra));
+  padding: 0;
+}
 .com-painel .palco { margin-right: var(--largura-painel); } /* o canvas se centraliza no que sobra */
 
 #tela {
   image-rendering: pixelated;
   background: #000;
-  border: 1px solid var(--linha);
+  outline: 1px solid var(--linha); /* outline, não border: a moldura não entra na largura, e 960 px lógicos viram exatamente N*960 px de tela */
 }
 
 .painel {

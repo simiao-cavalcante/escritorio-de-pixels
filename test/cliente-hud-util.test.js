@@ -108,3 +108,18 @@ test('escalaDaTela desconta a barra e o painel aberto e aceita escala menor que 
   assert.equal(escalaDaTela({ larguraJanela: 1000, alturaJanela: 336, painelAberto: false }), 0.5);
   assert.equal(escalaDaTela({ larguraJanela: 100, alturaJanela: 100, painelAberto: true }), 0.2, 'janela minúscula não zera nem inverte o canvas');
 });
+
+test('escalaDaTela devolve múltiplo inteiro quando o escritório cabe, e fracionário só abaixo de 960x576', () => {
+  // 1500x900 caberia 1,56x na largura e 1,48x na altura: arredonda para baixo, 1x, pixels uniformes.
+  assert.equal(escalaDaTela({ larguraJanela: 1500, alturaJanela: 900, painelAberto: false }), 1);
+  assert.equal(escalaDaTela({ larguraJanela: 2879, alturaJanela: 1800, painelAberto: false }), 2, '2879 não chega a 3x (2880)');
+  assert.equal(escalaDaTela({ larguraJanela: 2880, alturaJanela: 1776, painelAberto: false }), 3, '2880x1776 é exatamente 3x com a barra');
+  assert.equal(escalaDaTela({ larguraJanela: 2880, alturaJanela: 1776, painelAberto: true }), 2, 'o painel tira 290 px e derruba para 2x');
+  // Abaixo de 1x (960x624 com a barra) a escala é fracionária: a cena encolhe em vez de ser cortada.
+  assert.equal(escalaDaTela({ larguraJanela: 960, alturaJanela: 624, painelAberto: false }), 1);
+  assert.equal(escalaDaTela({ larguraJanela: 959, alturaJanela: 624, painelAberto: false }), 959 / 960);
+  assert.equal(escalaDaTela({ larguraJanela: 960, alturaJanela: 623, painelAberto: false }), 575 / 576);
+  for (const escala of [escalaDaTela({ larguraJanela: 1366, alturaJanela: 768 }), escalaDaTela({ larguraJanela: 3840, alturaJanela: 2160 })]) {
+    assert.ok(Number.isInteger(escala) && escala >= 1, `esperava inteiro >= 1, veio ${escala}`);
+  }
+});
