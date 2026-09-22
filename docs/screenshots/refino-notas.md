@@ -66,10 +66,8 @@ sócios); o carpete ficou uniforme; o tapete ganhou um padrão legível ao repet
 
 ## O que não melhorou (ou piorou)
 
-- **Ternos azul-marinho dos sócios** ainda saem listrados de azul e preto: a média das
-  linhas de dobra da bruta cai entre o azul-marinho e o contorno da paleta e a quantização
-  alterna as duas cores. Um filtro de mediana antes da quantização ou um tom intermediário
-  na paleta resolveria; não foi feito.
+- ~~Ternos azul-marinho dos sócios listrados de azul e preto~~ — corrigido em 2026-09-22,
+  ver "Correção dos ternos" abaixo.
 - **Piso de madeira** continua carregado a 32 px (as tábuas da bruta são finas demais);
   está menos alaranjado que antes, mas ainda parece textura, não tábuas.
 - **Mesa de reunião** veio vista de cima (tampo e seis cadeiras), não na mesma
@@ -83,6 +81,30 @@ sócios); o carpete ficou uniforme; o tapete ganhou um padrão legível ao repet
   ainda dão pixels regulares em pares.
 - Rostos a 32x48 continuam indistintos; é limite do tamanho, não da geração.
 - Cadeira e impressora (32x32) continuam pequenas na cena: o contrato do atlas não mudou.
+
+## Correção dos ternos dos sócios (2026-09-22, commit "fix: ternos dos sócios sem listras")
+
+Diagnóstico por medição, antes de gastar chamadas: o azul do terno na bruta era (19,31,66),
+quase equidistante do azul-marinho da paleta (31,58,99), do preto do contorno (13,13,16), do
+cabelo preto (36,28,20) e do carpete escuro (47,63,79); qualquer sombra da média de área
+fazia a quantização alternar entre essas cores, e o terno saía listrado.
+
+Tentativa 1 (prompt) bastou: os prompts de `personagem-socio-a` e `-b` pedem agora "solid
+navy suit (medium navy blue, clearly blue and not black), flat two-tone shading, no
+gradients, no fold lines". A bruta veio com o terno em (28,55,118) e sombra em (12,30,74),
+que caem limpos no azul-marinho e no contorno: no tronco do sprite final, 260 a 290 pixels
+de azul-marinho contra 5 a 10 de cores espúrias (antes eram 5 de azul contra 180 de
+contorno e 100 de cabelo preto no sócio A). Regeneração só dos dois ids via `--so`:
+2 chamadas, 354 tokens de texto e 2.744 de imagem (≈ US$ 0,08). A tentativa 2 (tom
+intermediário na paleta) não foi necessária, e a paleta de 32 cores ficou intacta.
+
+Seniores (`personagem-senior-a` e `-b`, terno grafite) conferidos no zoom de 8x e por
+contagem: o grafite bruto (68,69,73) cai direto no grafite da paleta (74,74,74), sem
+listras; ficaram como estavam.
+
+Arquivos: `docs/screenshots/arte-contato.png` (folha refeita), `demo-refino-03.png`
+(captura da demo depois da correção). Custo acumulado do experimento: 29 chamadas,
+≈ US$ 1,29.
 
 ## Como repetir
 

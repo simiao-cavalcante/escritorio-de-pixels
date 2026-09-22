@@ -8,9 +8,9 @@
   },
   "assets": [
     { "id": "personagem-socio-a", "categoria": "personagem", "w": 32, "h": 48, "ancora": { "x": 16, "y": 48 },
-      "prompt": "a fictional law firm senior partner: a woman in her fifties with light brown skin and short silver hair, dark navy three-piece suit with a burgundy tie and a white shirt, a small blank name badge on the lapel, standing upright with her arms at her sides, formal and authoritative" },
+      "prompt": "a fictional law firm senior partner: a woman in her fifties with light brown skin and short silver hair, solid navy suit (three-piece, medium navy blue, clearly blue and not black) with a burgundy tie and a white shirt, flat two-tone shading, no gradients, no fold lines, a small blank name badge on the lapel, standing upright with her arms at her sides, formal and authoritative" },
     { "id": "personagem-socio-b", "categoria": "personagem", "w": 32, "h": 48, "ancora": { "x": 16, "y": 48 },
-      "prompt": "a fictional law firm senior partner: a man in his sixties with dark brown skin, a bald head and a short grey beard, dark navy three-piece suit with a deep green tie and a white shirt, standing upright with his arms at his sides, formal and authoritative" },
+      "prompt": "a fictional law firm senior partner: a man in his sixties with dark brown skin, a bald head and a short grey beard, solid navy suit (three-piece, medium navy blue, clearly blue and not black) with a deep green tie and a white shirt, flat two-tone shading, no gradients, no fold lines, standing upright with his arms at his sides, formal and authoritative" },
     { "id": "personagem-senior-a", "categoria": "personagem", "w": 32, "h": 48, "ancora": { "x": 16, "y": 48 },
       "prompt": "a fictional senior lawyer: a man in his forties with olive skin and short black hair, graphite grey two-piece suit over a light blue shirt with no tie, a closed cardboard folder under one arm, standing upright" },
     { "id": "personagem-senior-b", "categoria": "personagem", "w": 32, "h": 48, "ancora": { "x": 16, "y": 48 },
